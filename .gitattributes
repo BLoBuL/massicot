@@ -4,6 +4,7 @@ css/massicot.css -text
 formulaires/inc-apercu-logo.html -text
 formulaires/massicoter_image.html -text
 formulaires/massicoter_image.php -text
+javascripts/formulaireMassicoterImage.js -text
 lang/massicot_fr.php -text
 lang/paquet-massicot_fr.php -text
 lib/jquery.imgareaselect.js/Makefile -text
