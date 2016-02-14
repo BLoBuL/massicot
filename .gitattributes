@@ -5,6 +5,7 @@ formulaires/inc-apercu-logo.html -text
 formulaires/massicoter_image.html -text
 formulaires/massicoter_image.php -text
 javascripts/formulaireMassicoterImage.js -text
+lang/massicot.xml -text
 lang/massicot_fr.php -text
 lang/paquet-massicot.xml -text
 lang/paquet-massicot_fr.php -text
