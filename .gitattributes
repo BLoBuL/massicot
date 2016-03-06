@@ -59,3 +59,5 @@ prive/squelettes/contenu/massicoter_image.html -text
 prive/squelettes/inclure/lien_recadre.html -text
 prive/squelettes/top/massicoter_image.html -text
 prive/themes/spip/images/massicot-48.png -text
+tests_js/massicot_tests.html -text
+tests_js/tests.js -text
