@@ -1,6 +1,7 @@
 * text=auto !eol
 base/massicot.php -text
 css/massicot.css -text
+formulaires/inc-apercu-logo-roles-documents.html -text
 formulaires/inc-apercu-logo.html -text
 formulaires/massicoter_image.html -text
 formulaires/massicoter_image.php -text
@@ -55,6 +56,8 @@ lib/jquery.imgareaselect.js/test/unit/options.js -text
 /massicot_administrations.php -text
 /massicot_fonctions.php -text
 /massicot_pipelines.php -text
+modeles/document_desc.html -text
+modeles/document_desc_logo.html -text
 /paquet.xml -text
 prive/squelettes/contenu/massicoter_image.html -text
 prive/squelettes/inclure/lien_recadre.html -text
