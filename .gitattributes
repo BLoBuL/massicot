@@ -57,6 +57,7 @@ lib/jquery.imgareaselect.js/test/unit/options.js -text
 /massicot_fonctions.php -text
 /massicot_pipelines.php -text
 modeles/document_desc.html -text
+modeles/document_desc_fonctions.php -text
 modeles/document_desc_logo.html -text
 /paquet.xml -text
 prive/squelettes/contenu/massicoter_image.html -text
