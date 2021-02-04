@@ -246,9 +246,9 @@ function massicot_trouver_objet_logo($fichier) {
 
 	if (is_array($row) and (count($row) === 2)) {
 		return array(
-			'objet' => objet_type(
+			'objet' => sinon(objet_type(
 				array_search($row[0], $GLOBALS['table_logos'])
-			),
+			),$row[0]),
 			'id_objet' => $row[1],
 		);
 	}
