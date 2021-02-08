@@ -310,7 +310,7 @@ function massicoter_fichier($fichier, $parametres) {
 				$fichier,
 				$parametres['zoom'] * $width,
 				$parametres['zoom'] * $height,
-				center
+				'center'
 			),
 			'src'
 		);
