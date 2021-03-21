@@ -52,10 +52,10 @@ function formulaires_massicoter_image_saisies_dist($objet, $id_objet, $redirect,
 	if (isset($GLOBALS['presets_format_massicot'])
 			and is_array($GLOBALS['presets_format_massicot'])
 			and count($GLOBALS['presets_format_massicot'])) {
-		$datas = array();
+		$data = array();
 		foreach ($GLOBALS['presets_format_massicot'] as $preset) {
 			$cle = $preset['largeur'] . ':' . $preset['hauteur'];
-			$datas[$cle] = _T($preset['nom']);
+			$data[$cle] = _T($preset['nom']);
 		}
 
 		$saisies[] = array(
@@ -63,7 +63,7 @@ function formulaires_massicoter_image_saisies_dist($objet, $id_objet, $redirect,
 			'options' => array(
 				'nom' => 'format',
 				'label' => _T('massicot:label_format'),
-				'datas' => $datas,
+				'data' => $data,
 			),
 		);
 	}
