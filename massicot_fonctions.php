@@ -64,6 +64,11 @@ function massicot_chemin_image($objet, $id_objet, $role = null) {
  */
 function massicot_enregistrer($objet, $id_objet, $parametres) {
 
+	include_spip('inc/autoriser');
+	if (!autoriser('massicoter', $objet, $id_objet)) {
+		return _T('massicot:operation_non_autorisee');
+	}
+
 	include_spip('action/editer_objet');
 	include_spip('action/editer_liens');
 
@@ -143,6 +148,11 @@ function massicot_enregistrer($objet, $id_objet, $parametres) {
  * @return null|string : Rien, ou un message d'erreur
  */
 function massicot_supprimer($objet, $id_objet, $role='') {
+
+	include_spip('inc/autoriser');
+	if (!autoriser('massicoter', $objet, $id_objet)) {
+		return _T('massicot:operation_non_autorisee');
+	}
 
 	include_spip('base/abstract_sql');
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Utilisations de pipelines par Massicot
+ * Déclarations d'autorisations et utilisations de pipelines par Massicot
  *
  * @plugin	   Massicot
  * @copyright  2015
@@ -8,6 +8,29 @@
  * @licence	   GNU/GPL
  * @package	   SPIP\Massicot\Pipelines
  */
+
+/**
+ * Fonction du pipeline autoriser. N'a rien à faire
+ *
+ * @pipeline autoriser
+ */
+function massicot_autoriser() { }
+
+/**
+ * Autoriser le massicotage d'un document ou d'un logo
+ *
+ * Par défaut, l'autorisation est déléguée à 'autoriser_modifier'.
+ *
+ * @param  string $faire Action demandée
+ * @param  string $type Type d'objet sur lequel appliquer l'action
+ * @param  int $id Identifiant de l'objet
+ * @param  array $qui Description de l'auteur demandant l'autorisation
+ * @param  array $opt Options de cette autorisation
+ * @return bool          true s'il a le droit, false sinon
+ */
+function autoriser_massicoter_dist($faire, $type, $id, $qui, $opt) {
+	return autoriser('modifier', $type, $id, $qui, $opt);
+}
 
 /**
  * Insérer le plugin jquery de selection du cadre
@@ -171,12 +194,15 @@ function massicot_editer_contenu_objet($flux) {
 
 	if ($args['type'] === 'illustrer_document') {
 		include_spip('base/abstract_sql');
+		include_spip('inc/autoriser');
 
 		if ($id_vignette = sql_getfetsel(
 			'id_vignette',
 			'spip_documents',
 			'id_document='.intval($args['id'])
-		)) {
+		)
+		and autoriser('massicoter', 'document', $args['id'])
+		and autoriser('massicoter', 'document', $id_vignette)) {
 			$href = generer_url_ecrire(
 				'massicoter_image',
 				'objet=document&id_objet=' . $id_vignette . '&redirect=' . urlencode(self())

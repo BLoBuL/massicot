@@ -88,10 +88,12 @@
 			},
 			'ajax supprimer',
 		})]
-    <a href="[(#URL_ECRIRE{massicoter_image, objet=#ENV{objet}&id_objet=#ENV{id_objet}}|parametre_url{redirect,#SELF}|parametre_url{role, #GET{role}})]"
-       class="bouton">
-      <strong><:massicot:massicoter:></strong>
-    </a>
+    [(#AUTORISER{massicoter,#ENV{objet},#ENV{id_objet}})
+      <a href="[(#URL_ECRIRE{massicoter_image, objet=#ENV{objet}&id_objet=#ENV{id_objet}}|parametre_url{redirect,#SELF}|parametre_url{role, #GET{role}})]"
+         class="bouton">
+        <strong><:massicot:massicoter:></strong>
+      </a>
+    ]
 	</div>
 	]
 
