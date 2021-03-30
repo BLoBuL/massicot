@@ -22,9 +22,6 @@ $GLOBALS[$GLOBALS['idx_lang']] = array(
 	'massicot_titre' => 'Image cropper',
 	'massicoter' => 'Crop the image',
 
-	// O
-	'operation_non_autorisee' => 'This operation is not authorized.',
-
 	// R
 	'reinitialiser' => 'Reset',
 
