@@ -1,9 +1,9 @@
 <paquet
 	prefix="massicot"
 	categorie="multimedia"
-	version="0.8.11"
+	version="0.8.12"
 	etat="stable"
-	compatibilite="[3.0.17;3.2.*]"
+	compatibilite="[3.0.17;4.2.*]"
 	logo="prive/themes/spip/images/massicot-48.png"
 	documentation="https://contrib.spip.net/Massicot"
 	schema="1.1.0"
@@ -34,6 +34,7 @@
 
 	<!-- <lib nom="jquery.imgareaselect.js" lien="https://github.com/odyniec/imgareaselect/archive/master.zip" /> -->
 
+	<necessite nom="jqueryui" />
 	<necessite nom="medias" compatibilite="[2.7.59;[" />
 	<necessite nom="saisies" compatibilite="[3.23.2;[" />
 

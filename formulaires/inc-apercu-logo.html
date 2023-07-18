@@ -14,9 +14,9 @@
 ]
 [(#GET{roles_documents_actif}|non)
 
+[(#SET{role, #ENV{quoi}|=={logo_off}|?{logo_survol,''}})]
 [(#SET{logo_recadre, #ENV{logo}|massicoter_objet{#ENV{objet},#ENV{id_objet},#GET{role}}})]
 
-[(#SET{role, #ENV{quoi}|=={logo_off}|?{logo_survol,''}})]
 <div class="apercu">
   [<div class="spip_logo">
     <a href="#GET{logo_recadre}" class='mediabox'>
