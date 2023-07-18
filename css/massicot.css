@@ -1,7 +1,10 @@
-
-.largeur {
+.massicoter_image #page .largeur {
 	/* pour compat 4.2 avec fonctionnement 3.2 */
 	width: 780px;
+}
+.massicoter_image #pied .largeur {
+	/* pour compat 4.2 avec fonctionnement 3.2 */
+	width: 100%;
 }
 
 .image-massicot {
