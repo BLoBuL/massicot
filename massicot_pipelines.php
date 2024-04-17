@@ -29,6 +29,28 @@ function massicot_autoriser() { }
  * @return bool          true s'il a le droit, false sinon
  */
 function autoriser_massicoter_dist($faire, $type, $id, $qui, $opt) {
+	if ($type === 'document') {
+		$ext = sql_getfetsel(
+			'extension',
+			'spip_documents',
+			'id_document='.intval($id)
+		);
+		if ($ext === 'svg') {
+			return false;
+		}
+	} else {
+		$chercher_logo = charger_fonction('chercher_logo', 'inc');
+		foreach(array('on', 'off') as $role) {
+		$logo = $chercher_logo($id, $type, $role);
+			if (is_array($logo)) {
+				$logo = array_shift($logo);
+				$logo = pathinfo($logo);
+				if (!empty($logo['extension']) && ($logo['extension'] === 'svg')) {
+					return false;
+				}
+			}
+		}
+	}
 	return autoriser('modifier', $type, $id, $qui, $opt);
 }
 
