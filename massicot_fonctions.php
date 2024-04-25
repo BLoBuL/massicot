@@ -381,11 +381,11 @@ function massicoter_document($fichier = false) {
 		'D.fichier='.sql_quote(set_spip_doc($fichier))
 	);
 
-	if (is_null($parametres)) {
-		return $fichier;
+	if (!is_null($parametres)) {
+		$parametres = unserialize($parametres);
 	}
 
-	return massicoter_fichier($fichier, unserialize($parametres));
+	return massicoter_fichier($fichier, $parametres);
 }
 
 /**
