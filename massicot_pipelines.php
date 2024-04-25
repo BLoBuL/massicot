@@ -44,9 +44,11 @@ function autoriser_massicoter_dist($faire, $type, $id, $qui, $opt) {
 		$logo = $chercher_logo($id, $type, $role);
 			if (is_array($logo)) {
 				$logo = array_shift($logo);
-				$logo = pathinfo($logo);
-				if (!empty($logo['extension']) && ($logo['extension'] === 'svg')) {
-					return false;
+				if (!is_null($logo)) {
+					$logo = pathinfo($logo);
+					if (!empty($logo['extension']) && ($logo['extension'] === 'svg')) {
+						return false;
+					}
 				}
 			}
 		}
