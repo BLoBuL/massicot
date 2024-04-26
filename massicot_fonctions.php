@@ -290,6 +290,9 @@ function massicoter_fichier($fichier, $parametres) {
 	   relatif au dossier IMG qu'on ne peut pas retourner tel quel,
 	   sous peine de de casser le portfolio de la dist.
 	   (constaté sur SPIP 3.1 RC1) */
+	if (substr($fichier, 0, 1) === '/') {
+		return $fichier_original;
+	}
 	if (! file_exists($fichier)) {
 		$fichier = _DIR_IMG . $fichier;
 		// Si on n'a toujours rien, c'est probablement un fichier distant
