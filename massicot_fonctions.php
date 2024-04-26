@@ -304,13 +304,22 @@ function massicoter_fichier($fichier, $parametres) {
 	}
 
 	list($width, $height) = getimagesize($fichier);
+	if ($parametres['zoom'] === '1'
+		&& $parametres['x1'] === '0'
+		&& $parametres['x2'] === (string)$width
+		&& $parametres['y1'] === '0'
+		&& $parametres['y2'] === (string)$height
+		) {
+		// Ne rien faire si rien ne change
+		return $fichier;
+	}
 
 	if ($parametres['zoom'] <= 1) {
 		$fichier = extraire_attribut(
 			image_reduire(
 				$fichier,
-				$parametres['zoom'] * $width,
-				$parametres['zoom'] * $height
+				intval($parametres['zoom'] * $width),
+				intval($parametres['zoom'] * $height)
 			),
 			'src'
 		);
@@ -318,8 +327,8 @@ function massicoter_fichier($fichier, $parametres) {
 		$fichier = extraire_attribut(
 			image_recadre(
 				$fichier,
-				$parametres['zoom'] * $width,
-				$parametres['zoom'] * $height,
+				intval($parametres['zoom'] * $width),
+				intval($parametres['zoom'] * $height),
 				'center'
 			),
 			'src'
@@ -331,22 +340,25 @@ function massicoter_fichier($fichier, $parametres) {
 	$fichier = $fichier['path'];
 
 	list($width, $height) = getimagesize($fichier);
-
+	$width = abs(intval($width - $parametres['x1']));
+	$height = abs(intval($height - $parametres['y1']));
 	$fichier = extraire_attribut(
 		image_recadre(
 			$fichier,
-			$width	- $parametres['x1'],
-			$height - $parametres['y1'],
+			$width,
+			$height,
 			'bottom right'
 		),
 		'src'
 	);
 
+	$width = abs(intval($parametres['x2'] - $parametres['x1']));
+	$height = abs(intval($parametres['y2'] - $parametres['y1']));
 	$fichier = extraire_attribut(
 		image_recadre(
 			$fichier,
-			$parametres['x2'] - $parametres['x1'],
-			$parametres['y2'] - $parametres['y1'],
+			$width,
+			$height,
 			'top left'
 		),
 		'src'
