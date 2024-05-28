@@ -342,6 +342,10 @@ function massicoter_fichier($fichier, $parametres) {
 	$fichier = parse_url($fichier);
 	$fichier = $fichier['path'];
 
+	if (empty($fichier)) {
+		return $fichier_original;
+	}
+
 	list($width, $height) = getimagesize($fichier);
 	$width = abs($width - intval($parametres['x1']));
 	$height = abs($height - intval($parametres['y1']));
@@ -472,6 +476,10 @@ function massicoter_logo_document($logo, $doc = array()) {
 	}
 
 	$fichier = extraire_attribut($logo, 'src');
+	if (empty($fichier)) {
+		return $logo;
+	}
+
 	/* On se débarasse d'un éventuel query string */
 	$fichier = preg_replace('#\?[0-9]+#', '', $fichier);
 
