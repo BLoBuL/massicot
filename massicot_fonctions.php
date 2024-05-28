@@ -343,8 +343,8 @@ function massicoter_fichier($fichier, $parametres) {
 	$fichier = $fichier['path'];
 
 	list($width, $height) = getimagesize($fichier);
-	$width = abs(intval($width - $parametres['x1']));
-	$height = abs(intval($height - $parametres['y1']));
+	$width = abs($width - intval($parametres['x1']));
+	$height = abs($height - intval($parametres['y1']));
 	$fichier = extraire_attribut(
 		image_recadre(
 			$fichier,
@@ -355,8 +355,8 @@ function massicoter_fichier($fichier, $parametres) {
 		'src'
 	);
 
-	$width = abs(intval($parametres['x2'] - $parametres['x1']));
-	$height = abs(intval($parametres['y2'] - $parametres['y1']));
+	$width = abs(intval($parametres['x2']) - intval($parametres['x1']));
+	$height = abs(intval($parametres['y2']) - intval($parametres['y1']));
 	$fichier = extraire_attribut(
 		image_recadre(
 			$fichier,
