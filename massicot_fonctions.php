@@ -465,7 +465,7 @@ function massicoter_logo_document($logo, $doc = array()) {
 
 	/* Si le document en question n'est pas une image, on ne fait rien */
 	if ((! $logo)
-		or (preg_match('/^(jpe?g|png|gif)$/i', $doc['extension']) === 0)) {
+		or (isset($doc['extension']) && preg_match('/^(jpe?g|png|gif)$/i', $doc['extension']) === 0)) {
 		return $logo;
 	}
 
