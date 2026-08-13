@@ -4,6 +4,15 @@ Massicot 2 cible SPIP 4.x et PHP 8 ou supérieur. Il conserve les coordonnées
 enregistrées par les versions précédentes, mais n’altère plus implicitement les
 balises natives sur une installation neuve.
 
+## Résumé des changements de données
+
+| Version | Changement | Migration destructive |
+| --- | --- | --- |
+| 2.0.1 | index de lecture des liens | non |
+| 2.1.0 | paramètre `filtre`, défaut `aucun` | non |
+| 2.1.1 | paramètre `rotation`, défaut `0` | non |
+| 2.1.2 | pipeline HTML d’orientation EXIF | non |
+
 ## Mise à jour d’un site existant
 
 La mise à jour active automatiquement le mode de compatibilité. Les anciens
@@ -19,6 +28,15 @@ Le mode historique est transitoire. Pour le désactiver :
 4. désactiver le mode dans la configuration de Massicot ;
 5. vider le cache des squelettes.
 
+Avant cette bascule, vérifier au minimum :
+
+- un logo normal et un logo de survol ;
+- un document inséré avec `<docXX>` ;
+- un portfolio et une vignette de document ;
+- un squelette utilisant `#FICHIER` ou `#URL_DOCUMENT` ;
+- un JPEG portrait portant une orientation EXIF ;
+- les téléchargements des fichiers originaux.
+
 Le document original n’est jamais remplacé par la migration et les lignes des
 tables `spip_massicotages` et `spip_massicotages_liens` sont conservées.
 La mise à niveau 2.0.1 ajoute uniquement un index de lecture sur les liens ;
@@ -33,6 +51,11 @@ leur contrat SPIP natif. Le recadrage doit être demandé explicitement.
 
 Avant désactivation définitive, le mode historique peut être réactivé depuis
 la configuration. Cette bascule ne transforme ni ne supprime les données.
+
+Pour revenir temporairement à une version antérieure de Massicot 2, désactiver
+le plugin, remplacer son répertoire, vider le cache SPIP puis le réactiver. Les
+clés JSON inconnues n’altèrent pas les tables, mais une nouvelle sauvegarde
+depuis une ancienne version peut ne pas les conserver.
 
 ## API explicite dans les squelettes
 

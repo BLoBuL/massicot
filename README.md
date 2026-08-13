@@ -1,65 +1,77 @@
 # Massicot 2
 
-Massicot fournit un recadrage non destructif pour les logos et documents image
-de SPIP 4. Les sources éditoriales restent intactes ; les rendus sont produits
-par les filtres d’image et le cache natifs de SPIP.
+Massicot fournit un recadrage non destructif pour les logos et documents image de SPIP 4. Les sources éditoriales restent intactes ; les rendus sont produits par les filtres d’image et les caches SPIP.
+
+- [Installation et mise à jour](#installation-et-mise-à-jour)
+- [Utilisation](#utilisation)
+- [Rotation et orientation EXIF](#rotation-et-orientation-exif)
+- [Utilisation dans les squelettes](#utilisation-dans-les-squelettes)
+- [Limites](#limites)
+- [Tests](#tests)
+- [Journal des changements](CHANGELOG.md)
 
 ## Compatibilité
 
 - SPIP 4.x ;
 - PHP 8.0 ou supérieur ;
 - JPEG, PNG, GIF et WebP selon le moteur d’image disponible ;
-- images locales et distantes, ces dernières étant localisées avec
-  `copie_locale()`.
+- images distantes localisées avec `copie_locale()` lorsqu’elles passent explicitement par Massicot.
 
-AVIF, SVG et les documents non raster ne proposent pas l’action de recadrage :
-les filtres d’image natifs communs à SPIP 4.2 et 4.4 ne prennent pas en charge
-AVIF de façon portable.
+AVIF, SVG et les documents non raster ne proposent pas l’action de recadrage.
 
-## Interface
+## Installation et mise à jour
 
-Les actions sont injectées par les pipelines de SPIP dans :
+Installer le plugin dans `plugins/auto/`, puis l’activer depuis la gestion des plugins de SPIP. Une installation neuve laisse les balises natives inchangées.
 
-- le formulaire natif des logos ;
-- la médiathèque et les descriptions de documents ;
-- l’écran d’édition détaillé d’un document ;
-- la gestion d’une vignette de document.
+Lors d’une mise à jour depuis Massicot 1.x, le mode de compatibilité est activé automatiquement. Les coordonnées et liens existants sont conservés. Les anciens paramètres sérialisés restent lisibles et sont réécrits en JSON lors de la prochaine sauvegarde. Consulter [MIGRATION.md](MIGRATION.md) avant de désactiver ce mode.
 
-Le recadreur est responsive, tactile et utilisable au clavier. Les flèches
-déplacent la sélection ou une poignée ; `Maj` augmente le pas.
+## Utilisation
 
-La colonne d’outils propose des rendus calculés par les filtres natifs de
-SPIP 4 : noir et blanc, sépia, luminosité, assombrissement, renforcement et
-flou doux. Leur aperçu est immédiat, mais le dérivé final reste produit côté
-serveur par SPIP.
+Depuis un logo, un document image ou une vignette, choisir **Recadrer** :
 
-Un panneau EXIF en lecture seule affiche les dimensions, le format et, quand
-ils existent, l’appareil, l’objectif et les réglages photographiques. Les
-coordonnées GPS et les champs libres ne sont jamais exposés.
+1. régler le zoom ;
+2. déplacer ou redimensionner la sélection avec la souris, le tactile ou les flèches (`Maj` augmente le pas) ;
+3. sélectionner éventuellement un filtre ;
+4. choisir une rotation de sortie ;
+5. valider avec **Recadrer l’image**.
 
-L’orientation EXIF est matérialisée avant le recadrage avec l’API adoptée par
-SPIP 5 (`image_oriente_selon_exif`) lorsqu’elle est disponible. Des boutons
-permettent ensuite une rotation de sortie à 90°, 180° ou 270°. Massicot contrôle
-les dimensions du dérivé SPIP et utilise un repli GD en cas de résultat
-incohérent, sans modifier le fichier éditorial original.
+**Réinitialiser** restaure l’image entière, le rendu original et une rotation nulle. **Supprimer le recadrage** efface uniquement la règle Massicot. Le fichier source n’est jamais remplacé.
 
-Sous SPIP 4, le pipeline `post_propre` applique cette normalisation aux images
-produites par les modèles natifs (`<docXX>`, `<imgXX>`, portfolios). Il reste
-ciblé aux JPEG locaux et conserve les autres attributs HTML et les `srcset`.
-Les URL distantes, les téléchargements et les images placées directement dans
-du CSS ne sont pas réécrits.
+Les filtres disponibles utilisent les fonctions natives de SPIP 4 : noir et blanc, sépia, luminosité, assombrissement, renforcement et flou doux. Leur aperçu est immédiat ; le dérivé final est calculé côté serveur.
 
-## Squelettes
+Le panneau EXIF affiche uniquement dimensions, format, appareil, objectif et réglages photographiques disponibles. Les coordonnées GPS et champs libres ne sont jamais exposés.
+
+## Rotation et orientation EXIF
+
+Massicot distingue deux opérations :
+
+- l’orientation EXIF est corrigée automatiquement avant le recadrage pour accorder pixels, dimensions et affichage ;
+- la rotation de sortie est un choix éditorial appliqué après le recadrage.
+
+La correction privilégie `image_oriente_selon_exif()` lorsqu’elle existe, comme dans SPIP 5 et les versions récentes de Filtres Images. Sous SPIP 4, Massicot vérifie le dérivé et utilise un repli GD mis en cache si le résultat est absent ou de dimensions incohérentes.
+
+Le pipeline `post_propre` applique cette normalisation aux JPEG locaux produits par les modèles SPIP (`<docXX>`, `<imgXX>` et portfolios). Il conserve les attributs HTML et `srcset`, sans modifier les originaux.
+
+## Utilisation dans les squelettes
 
 L’API explicite recommandée est :
 
 ```html
 [(#FICHIER|massicoter_objet{document,#ID_DOCUMENT})]
 [(#LOGO_ARTICLE|massicoter_objet{article,#ID_ARTICLE})]
+[(#LOGO_ARTICLE_SURVOL|massicoter_objet{article,#ID_ARTICLE,logo_survol})]
 ```
 
-Consulter [MIGRATION.md](MIGRATION.md) pour sortir progressivement du mode de
-compatibilité des versions 1.x.
+Le filtre retourne le chemin du dérivé. Sans règle valide, il restitue le fichier reçu sans altérer le contrat des balises natives.
+
+## Limites
+
+- le pipeline global corrige les JPEG locaux présents dans le HTML produit par les modèles ;
+- une URL écrite directement dans `background-image` ne passe pas par `post_propre` : employer un dérivé explicite ;
+- les URL distantes ne sont pas réécrites par le pipeline global ;
+- AVIF et SVG ne sont pas recadrés dans la série 2.x ;
+- les animations GIF ne sont pas garanties après un traitement GD ;
+- Massicot corrige son périmètre d’affichage sans modifier le cœur de SPIP 4 ni les originaux de `IMG/`.
 
 ## Tests
 
@@ -71,3 +83,5 @@ php tests/test_autorisations.php
 php tests/test_html.php
 SPIP_ROOT=/chemin/vers/spip php tests/test_spip_runtime.php
 ```
+
+La CI couvre SPIP 4.2/PHP 8.1 et SPIP 4.4/PHP 8.4.
