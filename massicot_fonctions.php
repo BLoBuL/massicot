@@ -164,6 +164,7 @@ function massicot_cle_cache($objet, $id_objet, $role = '') {
  * Invalide les lectures mémorisées d'un objet après une écriture.
  */
 function massicot_invalider_cache($objet, $id_objet, $role = null) {
+	$GLOBALS['massicot_documents_par_fichier'] = array();
 	foreach (array('massicot_parametres', 'massicot_identifiants') as $nom) {
 		if (!isset($GLOBALS[$nom]) || !is_array($GLOBALS[$nom])) {
 			$GLOBALS[$nom] = array();
@@ -573,18 +574,25 @@ function massicoter_document($fichier = false) {
 
 	include_spip('base/abstract_sql');
 	include_spip('inc/documents');
+	$cle_fichier = set_spip_doc($fichier);
+	if (array_key_exists($cle_fichier, $GLOBALS['massicot_documents_par_fichier'] ?? array())) {
+		return massicoter_fichier($fichier, $GLOBALS['massicot_documents_par_fichier'][$cle_fichier]);
+	}
 
 	$parametres = sql_getfetsel(
 		'traitements',
 		'spip_massicotages as M' .
 		' INNER JOIN spip_massicotages_liens as L ON L.id_massicotage = M.id_massicotage' .
 		' INNER JOIN spip_documents as D ON (D.id_document = L.id_objet AND L.objet="document")',
-		'D.fichier='.sql_quote(set_spip_doc($fichier))
+		'D.fichier='.sql_quote($cle_fichier)
 	);
 
 	if (!is_null($parametres)) {
 		$parametres = massicot_decoder_parametres($parametres);
+	} else {
+		$parametres = array();
 	}
+	$GLOBALS['massicot_documents_par_fichier'][$cle_fichier] = $parametres;
 
 	return massicoter_fichier($fichier, $parametres);
 }
