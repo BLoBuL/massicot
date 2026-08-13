@@ -21,6 +21,8 @@ Le mode historique est transitoire. Pour le désactiver :
 
 Le document original n’est jamais remplacé par la migration et les lignes des
 tables `spip_massicotages` et `spip_massicotages_liens` sont conservées.
+La mise à niveau 2.0.1 ajoute uniquement un index de lecture sur les liens ;
+elle ne réécrit aucune coordonnée.
 
 ## Installation neuve
 
@@ -31,3 +33,20 @@ leur contrat SPIP natif. Le recadrage doit être demandé explicitement.
 
 Avant désactivation définitive, le mode historique peut être réactivé depuis
 la configuration. Cette bascule ne transforme ni ne supprime les données.
+
+## API explicite dans les squelettes
+
+Pour un document dans une boucle `DOCUMENTS` :
+
+```html
+[(#FICHIER|massicoter_objet{document,#ID_DOCUMENT})]
+```
+
+Pour un logo d’article :
+
+```html
+[(#LOGO_ARTICLE|massicoter_objet{article,#ID_ARTICLE})]
+```
+
+Le filtre retourne le fichier dérivé. Les balises natives `#FICHIER` et
+`#URL_DOCUMENT` restent inchangées lorsque le mode de compatibilité est coupé.

@@ -194,6 +194,7 @@ function massicot_declarer_tables_auxiliaires($tables_auxiliaires) {
 		'key' => array(
 			'PRIMARY KEY'		 => 'id_massicotage,id_objet,objet,role',
 			'KEY id_massicotage' => 'id_massicotage',
+			'KEY objet_role' => 'objet,id_objet,role',
 		),
 	);
 

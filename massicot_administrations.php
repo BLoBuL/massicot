@@ -28,6 +28,7 @@ function massicot_upgrade($nom_meta_base_version, $version_cible) {
 
 	$maj['1.1.0'] = array(array('maj_tables', array('spip_massicotages_liens')));
 	$maj['2.0.0'] = array(array('massicot_initialiser_configuration', true));
+	$maj['2.0.1'] = array(array('maj_tables', array('spip_massicotages_liens')));
 
 	include_spip('base/upgrade');
 	maj_plugin($nom_meta_base_version, $version_cible, $maj);

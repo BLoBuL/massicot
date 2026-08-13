@@ -1,0 +1,48 @@
+# Massicot 2
+
+Massicot fournit un recadrage non destructif pour les logos et documents image
+de SPIP 4. Les sources éditoriales restent intactes ; les rendus sont produits
+par les filtres d’image et le cache natifs de SPIP.
+
+## Compatibilité
+
+- SPIP 4.x ;
+- PHP 8.0 ou supérieur ;
+- JPEG, PNG, GIF, WebP et AVIF selon le moteur d’image disponible ;
+- images locales et distantes, ces dernières étant localisées avec
+  `copie_locale()`.
+
+SVG et les documents non raster ne proposent pas l’action de recadrage.
+
+## Interface
+
+Les actions sont injectées par les pipelines de SPIP dans :
+
+- le formulaire natif des logos ;
+- la médiathèque et les descriptions de documents ;
+- l’écran d’édition détaillé d’un document ;
+- la gestion d’une vignette de document.
+
+Le recadreur est responsive, tactile et utilisable au clavier. Les flèches
+déplacent la sélection ou une poignée ; `Maj` augmente le pas.
+
+## Squelettes
+
+L’API explicite recommandée est :
+
+```html
+[(#FICHIER|massicoter_objet{document,#ID_DOCUMENT})]
+[(#LOGO_ARTICLE|massicoter_objet{article,#ID_ARTICLE})]
+```
+
+Consulter [MIGRATION.md](MIGRATION.md) pour sortir progressivement du mode de
+compatibilité des versions 1.x.
+
+## Tests
+
+```sh
+php tests/test_parametres.php
+php tests/test_migration.php
+php tests/test_cache.php
+php tests/test_autorisations.php
+```
