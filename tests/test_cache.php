@@ -26,6 +26,13 @@ if ($requete_sql !== 2) {
 	exit(1);
 }
 
+massicot_get_parametres('document', 42, 'logo_survol');
+massicot_get_parametres('document', 42, 'logo_survol');
+if ($requete_sql !== 3) {
+	fwrite(STDERR, "ECHEC isolation des roles\n");
+	exit(1);
+}
+
 $GLOBALS['massicot_parametres']['document:42:autre'] = array('temoin' => true);
 massicot_invalider_cache('document', 42);
 if (isset($GLOBALS['massicot_parametres']['document:42:autre'])) {
@@ -33,4 +40,4 @@ if (isset($GLOBALS['massicot_parametres']['document:42:autre'])) {
 	exit(1);
 }
 
-echo "3 tests cache OK\n";
+echo "4 tests cache OK\n";
