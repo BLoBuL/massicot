@@ -52,6 +52,13 @@ foreach ($formats as $extension => $encodeur) {
 	));
 	$dimensions = @getimagesize($derive);
 	$tests[$extension] = $dimensions && $dimensions[0] === 60 && $dimensions[1] === 50;
+	foreach (massicot_filtres_disponibles() as $filtre) {
+		$filtre_derive = massicot_appliquer_filtre_spip($derive, $filtre);
+		$filtre_dimensions = @getimagesize($filtre_derive);
+		$tests[$extension . '-' . $filtre] = $filtre_dimensions
+			&& $filtre_dimensions[0] === 60
+			&& $filtre_dimensions[1] === 50;
+	}
 	@unlink($source);
 }
 

@@ -88,6 +88,13 @@ function massicot_extension_recadrable($extension) {
 }
 
 /**
+ * Filtres visuels stables fournis par le plugin Filtres Images de SPIP 4.
+ */
+function massicot_filtres_disponibles() {
+	return array('aucun', 'nb', 'sepia', 'lumineux', 'sombre', 'net', 'flou');
+}
+
+/**
  * Vérifie qu'une source est une image raster réellement lisible.
  */
 function massicot_fichier_recadrable($fichier) {
@@ -132,6 +139,8 @@ function massicot_normaliser_parametres($parametres, $largeur = null, $hauteur =
 		'y1' => (int) round((float) $parametres['y1']),
 		'y2' => (int) round((float) $parametres['y2']),
 	);
+	$filtre = isset($parametres['filtre']) ? strtolower(trim((string) $parametres['filtre'])) : 'aucun';
+	$normalises['filtre'] = in_array($filtre, massicot_filtres_disponibles(), true) ? $filtre : 'aucun';
 
 	if ($normalises['zoom'] < 0.01 || $normalises['zoom'] > 10
 		|| $normalises['x1'] < 0 || $normalises['y1'] < 0
@@ -509,6 +518,7 @@ function massicoter_fichier($fichier, $parametres) {
 		&& $parametres['x2'] === $width
 		&& $parametres['y1'] === 0
 		&& $parametres['y2'] === $height
+		&& ($parametres['filtre'] ?? 'aucun') === 'aucun'
 		) {
 		// Ne rien faire si rien ne change
 		return $fichier;
@@ -568,7 +578,85 @@ function massicoter_fichier($fichier, $parametres) {
 		'src'
 	);
 
+	$fichier = massicot_appliquer_filtre_spip($fichier, $parametres['filtre'] ?? 'aucun');
+
 	return $fichier;
+}
+
+/**
+ * Applique un effet via les filtres d'image natifs de SPIP 4.
+ */
+function massicot_appliquer_filtre_spip($fichier, $filtre) {
+	$filtre = in_array($filtre, massicot_filtres_disponibles(), true) ? $filtre : 'aucun';
+	if ($filtre === 'aucun') {
+		return $fichier;
+	}
+	include_spip('inc/filtres');
+	include_spip('filtres/images_transforme');
+	$dimensions_source = @getimagesize(parse_url($fichier, PHP_URL_PATH) ?: $fichier);
+	$balise = match ($filtre) {
+		'nb' => image_nb($fichier),
+		'sepia' => image_sepia($fichier),
+		'lumineux' => image_gamma($fichier, 24),
+		'sombre' => image_gamma($fichier, -24),
+		'net' => image_renforcement($fichier, 0.7),
+		'flou' => image_flou($fichier, 2),
+		default => $fichier,
+	};
+	if (!is_string($balise) || $balise === '') {
+		return $fichier;
+	}
+	$derive = extraire_attribut($balise, 'src');
+	$derive = $derive ?: $balise;
+	$dimensions_derive = @getimagesize(parse_url($derive, PHP_URL_PATH) ?: $derive);
+	if ($dimensions_source && $dimensions_derive
+		&& ($dimensions_source[0] !== $dimensions_derive[0] || $dimensions_source[1] !== $dimensions_derive[1])) {
+		$recadre = image_recadre($derive, $dimensions_source[0], $dimensions_source[1], 'center');
+		$derive = extraire_attribut($recadre, 'src') ?: $derive;
+	}
+	return $derive;
+}
+
+/**
+ * Métadonnées photographiques utiles, sans données GPS ni champs libres.
+ */
+function massicot_lire_exif($fichier) {
+	$dimensions = $fichier ? @getimagesize($fichier) : false;
+	$infos = array();
+	if ($dimensions) {
+		$infos['dimensions'] = $dimensions[0] . ' × ' . $dimensions[1] . ' px';
+		$infos['mime'] = $dimensions['mime'] ?? '';
+	}
+	if (!function_exists('exif_read_data') || !preg_match('/\.(jpe?g)$/i', parse_url((string) $fichier, PHP_URL_PATH) ?: $fichier)) {
+		return array_filter($infos);
+	}
+	$exif = @exif_read_data($fichier, 'IFD0,EXIF', true, false);
+	if (!is_array($exif)) {
+		return array_filter($infos);
+	}
+	$ifd0 = $exif['IFD0'] ?? array();
+	$prise = $exif['EXIF'] ?? array();
+	$champs = array(
+		'appareil' => trim(($ifd0['Make'] ?? '') . ' ' . ($ifd0['Model'] ?? '')),
+		'objectif' => $prise['LensModel'] ?? '',
+		'prise_de_vue' => $prise['DateTimeOriginal'] ?? '',
+		'exposition' => $prise['ExposureTime'] ?? '',
+		'ouverture' => isset($prise['FNumber']) ? 'f/' . massicot_exif_fraction($prise['FNumber']) : '',
+		'iso' => isset($prise['ISOSpeedRatings']) ? 'ISO ' . (is_array($prise['ISOSpeedRatings']) ? reset($prise['ISOSpeedRatings']) : $prise['ISOSpeedRatings']) : '',
+		'focale' => isset($prise['FocalLength']) ? massicot_exif_fraction($prise['FocalLength']) . ' mm' : '',
+	);
+	return array_filter(array_merge($infos, $champs), fn($valeur) => $valeur !== '' && $valeur !== null);
+}
+
+function massicot_exif_fraction($valeur) {
+	if (is_string($valeur) && preg_match('#^(-?\d+)/(\d+)$#', $valeur, $m) && (int) $m[2] !== 0) {
+		return round((int) $m[1] / (int) $m[2], 2);
+	}
+	return $valeur;
+}
+
+function massicot_label_exif($cle) {
+	return _T('massicot:exif_' . preg_replace('/[^a-z0-9_]/', '', strtolower((string) $cle)));
 }
 
 /**
