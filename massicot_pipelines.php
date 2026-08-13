@@ -250,3 +250,26 @@ function massicot_formulaire_charger($flux) {
 
 	return $flux;
 }
+
+/**
+ * Normalise l'orientation EXIF des images générées par les modèles SPIP 4.
+ *
+ * Le pipeline post_propre couvre notamment les raccourcis <docXX>, <imgXX>
+ * et les portfolios. Il ne modifie jamais la source éditoriale et devient
+ * naturellement neutre pour une image sans orientation EXIF.
+ *
+ * @pipeline post_propre
+ */
+function massicot_post_propre($html) {
+	if (!is_string($html) || $html === '' || stripos($html, '<img') === false) {
+		return $html;
+	}
+	include_spip('massicot_fonctions');
+	return preg_replace_callback(
+		'#<img\b[^>]*>#i',
+		function ($correspondance) {
+			return massicot_normaliser_images_html_spip4($correspondance[0]);
+		},
+		$html
+	);
+}

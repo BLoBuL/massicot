@@ -26,6 +26,12 @@ $tests = array(
 		&& str_contains($resultat, 'data-test="oui"')
 		&& str_contains($resultat, 'class="logo"'),
 	'source picture preservee' => str_contains($resultat, 'srcset="original.webp 2x"'),
+	'pipeline ignore image distante' => massicot_normaliser_images_html_spip4(
+		'<img src="https://example.test/photo.jpg" alt="Test">'
+	) === '<img src="https://example.test/photo.jpg" alt="Test">',
+	'pipeline ignore PNG' => massicot_normaliser_images_html_spip4(
+		'<img src="IMG/png/photo.png" alt="Test">'
+	) === '<img src="IMG/png/photo.png" alt="Test">',
 );
 
 $echecs = array_keys(array_filter($tests, fn($ok) => !$ok));

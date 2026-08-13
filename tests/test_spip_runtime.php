@@ -140,6 +140,13 @@ if (function_exists('imagejpeg') && function_exists('exif_read_data')) {
 		&& $dimensions_orientees[0] === 60
 		&& $dimensions_orientees[1] === 80
 		&& massicot_test_est_couleur(massicot_test_couleur($source_orientee, 4, 4), array(20, 40, 220));
+	$source_exif_url = str_replace('\\', '/', substr($source_exif, strlen(_DIR_RACINE)));
+	$html_oriente = massicot_normaliser_images_html_spip4(
+		'<img src="' . $source_exif_url . '" srcset="' . $source_exif_url . ' 1x, image-distante.jpg 2x" alt="Portrait">'
+	);
+	$tests['pipeline-html-exif'] = !str_contains($html_oriente, 'src="' . $source_exif_url . '"')
+		&& str_contains($html_oriente, 'srcset=')
+		&& str_contains($html_oriente, 'alt="Portrait"');
 	@unlink($source_exif);
 }
 

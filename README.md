@@ -43,6 +43,12 @@ permettent ensuite une rotation de sortie à 90°, 180° ou 270°. Massicot cont
 les dimensions du dérivé SPIP et utilise un repli GD en cas de résultat
 incohérent, sans modifier le fichier éditorial original.
 
+Sous SPIP 4, le pipeline `post_propre` applique cette normalisation aux images
+produites par les modèles natifs (`<docXX>`, `<imgXX>`, portfolios). Il reste
+ciblé aux JPEG locaux et conserve les autres attributs HTML et les `srcset`.
+Les URL distantes, les téléchargements et les images placées directement dans
+du CSS ne sont pas réécrits.
+
 ## Squelettes
 
 L’API explicite recommandée est :

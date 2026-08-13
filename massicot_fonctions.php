@@ -701,6 +701,77 @@ function massicot_orientation_exif($fichier) {
 }
 
 /**
+ * Corrige les URL raster d'une balise image native produite par SPIP 4.
+ * Les attributs autres que src/srcset sont conservés à l'identique.
+ */
+function massicot_normaliser_images_html_spip4($balise) {
+	if (!is_string($balise) || stripos($balise, '<img') === false) {
+		return $balise;
+	}
+	$remplacer = function ($correspondance) {
+		$url = html_entity_decode($correspondance[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		$derive = massicot_orienter_url_image_locale($url);
+		if ($derive === $url) {
+			return $correspondance[0];
+		}
+		return $correspondance[1]
+			. attribut_html($derive)
+			. $correspondance[3];
+	};
+	$balise = preg_replace_callback(
+		'#((?:src)\s*=\s*["\'])([^"\']+)(["\'])#i',
+		$remplacer,
+		$balise
+	);
+	return preg_replace_callback(
+		'#((?:srcset)\s*=\s*["\'])([^"\']+)(["\'])#i',
+		function ($correspondance) {
+			$candidats = array_map('trim', explode(',', html_entity_decode($correspondance[2], ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+			foreach ($candidats as &$candidat) {
+				$parties = preg_split('/\s+/', $candidat, 2);
+				$parties[0] = massicot_orienter_url_image_locale($parties[0]);
+				$candidat = implode(' ', $parties);
+			}
+			unset($candidat);
+			return $correspondance[1] . attribut_html(implode(', ', $candidats)) . $correspondance[3];
+		},
+		$balise
+	);
+}
+
+/**
+ * Résout une URL locale, puis renvoie son dérivé orienté si nécessaire.
+ */
+function massicot_orienter_url_image_locale($url) {
+	if (!is_string($url) || $url === '' || preg_match('#^(?:data:|https?://|//)#i', $url)) {
+		return $url;
+	}
+	$parties = parse_url($url);
+	$chemin_url = $parties['path'] ?? '';
+	if (!preg_match('/\.jpe?g$/i', $chemin_url)) {
+		return $url;
+	}
+	$racine = defined('_DIR_RACINE') ? _DIR_RACINE : '';
+	$chemin = ltrim($chemin_url, '/');
+	$fichier = $racine . $chemin;
+	if (!is_file($fichier)) {
+		return $url;
+	}
+	$derive = massicot_orienter_selon_exif($fichier);
+	if (!$derive || $derive === $fichier) {
+		return $url;
+	}
+	$derive_url = $derive;
+	if ($racine && str_starts_with($derive_url, $racine)) {
+		$derive_url = substr($derive_url, strlen($racine));
+	}
+	if (str_starts_with($chemin_url, '/')) {
+		$derive_url = '/' . ltrim($derive_url, '/');
+	}
+	return $derive_url;
+}
+
+/**
  * Repli fiable pour les rotations orthogonales, avec transparence préservée.
  */
 function massicot_rotation_gd($fichier, $rotation) {
