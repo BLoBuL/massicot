@@ -117,6 +117,30 @@ function massicot_header_prive($flux) {
  */
 function massicot_formulaire_fond($flux) {
 	$form = $flux['args']['form'] ?? '';
+	if ($form === 'illustrer_document') {
+		include_spip('base/abstract_sql');
+		include_spip('inc/autoriser');
+		$contexte = $flux['args']['contexte'] ?? array();
+		$args = $flux['args']['args'] ?? array();
+		$id_document = (int) ($contexte['id_document'] ?? ($args[0] ?? 0));
+		$id_vignette = $id_document ? (int) sql_getfetsel(
+			'id_vignette',
+			'spip_documents',
+			'id_document=' . $id_document
+		) : 0;
+		if (!$id_vignette || !autoriser('massicoter', 'document', $id_vignette)) {
+			return $flux;
+		}
+		$actions = recuperer_fond(
+			'prive/squelettes/inclure/massicot_actions_document',
+			array('id_document' => $id_vignette, 'redirect' => self())
+		);
+		if ($actions) {
+			$flux['data'] = preg_replace('#</form>#i', $actions . '</form>', $flux['data'], 1);
+		}
+		return $flux;
+	}
+
 	if ($form === 'editer_document') {
 		include_spip('inc/autoriser');
 		$contexte = $flux['args']['contexte'] ?? array();
@@ -166,43 +190,6 @@ function massicot_formulaire_fond($flux) {
 	// Le formulaire et ses attributs restent natifs : seul le src est dérivé.
 	$flux['data'] = massicot_appliquer_recadrage_html($flux['data'], $objet, $id_objet, '');
 	$flux['data'] = massicot_appliquer_recadrage_html($flux['data'], $objet, $id_objet, 'logo_survol');
-	return $flux;
-}
-
-/**
- * Ajouter un lien pour recadrer les vignettes des documents
- *
- * @pipeline editer_contenu_objet
- * @param  array $flux Données du pipeline
- * @return array       Données du pipeline
- */
-function massicot_editer_contenu_objet($flux) {
-
-	$html = $flux['data'];
-	$args = $flux['args'];
-
-	if ($args['type'] === 'illustrer_document') {
-		include_spip('base/abstract_sql');
-		include_spip('inc/autoriser');
-
-		if ($id_vignette = sql_getfetsel(
-			'id_vignette',
-			'spip_documents',
-			'id_document='.intval($args['id'])
-		)
-		and autoriser('massicoter', 'document', $args['id'])
-		and autoriser('massicoter', 'document', $id_vignette)) {
-			$href = generer_url_ecrire(
-				'massicoter_image',
-				'objet=document&id_objet=' . $id_vignette . '&redirect=' . urlencode(self())
-			);
-			$lien = '<a href="' . $href . '"><strong>' . _T('massicot:massicoter') . '</strong></a>';
-
-			$repere = '<span class=\'image_loading\'>';
-			$flux['data'] = str_replace($repere, $lien . $repere, $html);
-		}
-	}
-
 	return $flux;
 }
 

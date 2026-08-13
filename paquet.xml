@@ -29,7 +29,6 @@
 	<pipeline nom="formulaire_charger" inclure="massicot_pipelines.php" />
 	<pipeline nom="formulaire_traiter" inclure="massicot_pipelines.php" />
 	<pipeline nom="formulaire_fond" inclure="massicot_pipelines.php" />
-	<pipeline nom="editer_contenu_objet" inclure="massicot_pipelines.php" />
 
 	<necessite nom="php" compatibilite="[8.0.0;[" />
 	<necessite nom="medias" compatibilite="[2.7.59;[" />
