@@ -6,7 +6,6 @@
 	compatibilite="[4.0.0;4.*]"
 	logo="prive/themes/spip/images/massicot-48.png"
 	documentation="https://contrib.spip.net/Massicot"
-	configurer="massicot"
 	schema="2.0.0"
 >
 	<!-- crédit icône : http://ic8.link/1047 -->
@@ -42,4 +41,6 @@
 	<necessite nom="saisies" compatibilite="[3.23.2;[" />
 
 	<utilise nom="roles_documents" compatibilite="[1.1.8;[" />
+
+	<menu nom="configurer_massicot" titre="massicot:configuration_titre" parent="menu_configuration" icone="prive/themes/spip/images/massicot-xx.svg" />
 </paquet>
