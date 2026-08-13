@@ -134,6 +134,34 @@ function massicot_decoder_parametres($traitements) {
 }
 
 /**
+ * Clé stable du cache mémoire de la requête HTTP courante.
+ */
+function massicot_cle_cache($objet, $id_objet, $role = '') {
+	return objet_type($objet) . ':' . (int) $id_objet . ':' . (string) $role;
+}
+
+/**
+ * Invalide les lectures mémorisées d'un objet après une écriture.
+ */
+function massicot_invalider_cache($objet, $id_objet, $role = null) {
+	foreach (array('massicot_parametres', 'massicot_identifiants') as $nom) {
+		if (!isset($GLOBALS[$nom]) || !is_array($GLOBALS[$nom])) {
+			$GLOBALS[$nom] = array();
+		}
+		if ($role !== null) {
+			unset($GLOBALS[$nom][massicot_cle_cache($objet, $id_objet, $role)]);
+			continue;
+		}
+		$prefixe = objet_type($objet) . ':' . (int) $id_objet . ':';
+		foreach (array_keys($GLOBALS[$nom]) as $cle) {
+			if (str_starts_with($cle, $prefixe)) {
+				unset($GLOBALS[$nom][$cle]);
+			}
+		}
+	}
+}
+
+/**
  * Enregistre un massicotage dans la base de données
  *
  * @param string $objet : le type d'objet
@@ -227,6 +255,9 @@ function massicot_enregistrer($objet, $id_objet, $parametres) {
 	)) {
 		return $err;
 	}
+	massicot_invalider_cache($objet, $id_objet, $role);
+	$GLOBALS['massicot_parametres'][massicot_cle_cache($objet, $id_objet, $role)] = $parametres;
+	$GLOBALS['massicot_identifiants'][massicot_cle_cache($objet, $id_objet, $role)] = (int) $id_massicotage;
 }
 
 /**
@@ -259,6 +290,7 @@ function massicot_supprimer($objet, $id_objet, $role='') {
 	) === false) {
 		return "massicot_supprimer : erreur lors de la suppression";
 	}
+	massicot_invalider_cache($objet, $id_objet, $role);
 
 	if (sql_delete(
 		'spip_massicotages',
@@ -286,6 +318,7 @@ function massicot_supprimer_tous($objet, $id_objet) {
 	$where = sql_in('id_massicotage', $ids);
 	sql_delete('spip_massicotages_liens', $where);
 	sql_delete('spip_massicotages', $where);
+	massicot_invalider_cache($objet, $id_objet);
 }
 
 /**
@@ -300,6 +333,10 @@ function massicot_supprimer_tous($objet, $id_objet) {
  * @return integer|null : L'identifiant du massicotage, rien sinon
  */
 function massicot_get_id($objet, $id_objet, $role) {
+	$cle_cache = massicot_cle_cache($objet, $id_objet, $role);
+	if (array_key_exists($cle_cache, $GLOBALS['massicot_identifiants'] ?? array())) {
+		return $GLOBALS['massicot_identifiants'][$cle_cache] ?: null;
+	}
 
 	include_spip('action/editer_liens');
 
@@ -310,9 +347,11 @@ function massicot_get_id($objet, $id_objet, $role) {
 
 	foreach ($massicotages as $massicotage) {
 		if ($massicotage['role'] === $role) {
-			return intval($massicotage['id_massicotage']);
+			return $GLOBALS['massicot_identifiants'][$cle_cache] = intval($massicotage['id_massicotage']);
 		}
 	}
+	$GLOBALS['massicot_identifiants'][$cle_cache] = 0;
+	return null;
 }
 
 /**
@@ -328,6 +367,10 @@ function massicot_get_id($objet, $id_objet, $role) {
  * @return array : Un tableau avec les paramètres de massicotage
  */
 function massicot_get_parametres($objet, $id_objet, $role = '') {
+	$cle_cache = massicot_cle_cache($objet, $id_objet, $role);
+	if (array_key_exists($cle_cache, $GLOBALS['massicot_parametres'] ?? array())) {
+		return $GLOBALS['massicot_parametres'][$cle_cache];
+	}
 
 	include_spip('base/abstract_sql');
 
@@ -342,11 +385,10 @@ function massicot_get_parametres($objet, $id_objet, $role = '') {
 		)
 	);
 
-	if ($traitements) {
-		return massicot_decoder_parametres($traitements);
-	} else {
-		return array();
-	}
+	$GLOBALS['massicot_parametres'][$cle_cache] = $traitements
+		? massicot_decoder_parametres($traitements)
+		: array();
+	return $GLOBALS['massicot_parametres'][$cle_cache];
 }
 
 /**
