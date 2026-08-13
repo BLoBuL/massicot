@@ -52,4 +52,10 @@ Le filtre retourne le fichier dérivé. Les balises natives `#FICHIER` et
 `#URL_DOCUMENT` restent inchangées lorsque le mode de compatibilité est coupé.
 
 Les données historiques sans clé `filtre` restent valides et utilisent le
-rendu `aucun`. La version 2.1.0 ne demande donc aucune migration de table.
+rendu `aucun`. Les données sans clé `rotation` utilisent une rotation nulle.
+La version 2.1.1 ne demande donc aucune migration de table.
+
+Les JPEG portant une orientation EXIF sont matérialisés dans un dérivé avant
+affichage et recadrage. Ce comportement suit `image_oriente_selon_exif()` de
+SPIP 5 et sa rétroportation dans Filtres Images récent ; un repli compatible
+reste prévu pour les versions SPIP 4 qui ne fournissent pas encore cette API.

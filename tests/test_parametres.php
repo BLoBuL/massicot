@@ -8,7 +8,7 @@ require dirname(__DIR__) . '/massicot_fonctions.php';
 $tests = array();
 $tests['normalisation'] = massicot_normaliser_parametres(array(
 	'zoom' => '1.5', 'x1' => '10', 'x2' => '110', 'y1' => '20', 'y2' => '70',
-)) === array('zoom' => 1.5, 'x1' => 10, 'x2' => 110, 'y1' => 20, 'y2' => 70, 'filtre' => 'aucun');
+)) === array('zoom' => 1.5, 'x1' => 10, 'x2' => 110, 'y1' => 20, 'y2' => 70, 'filtre' => 'aucun', 'rotation' => 0);
 $tests['ordre invalide'] = massicot_normaliser_parametres(array(
 	'zoom' => 1, 'x1' => 10, 'x2' => 9, 'y1' => 0, 'y2' => 10,
 )) === array();
@@ -19,16 +19,22 @@ $tests['hors canevas'] = massicot_normaliser_parametres(array(
 	'zoom' => 1, 'x1' => 0, 'x2' => 101, 'y1' => 0, 'y2' => 50,
 ), 100, 50) === array();
 $tests['json 2.x'] = massicot_decoder_parametres('{"zoom":1,"x1":0,"x2":100,"y1":0,"y2":50}')
-	=== array('zoom' => 1.0, 'x1' => 0, 'x2' => 100, 'y1' => 0, 'y2' => 50, 'filtre' => 'aucun');
+	=== array('zoom' => 1.0, 'x1' => 0, 'x2' => 100, 'y1' => 0, 'y2' => 50, 'filtre' => 'aucun', 'rotation' => 0);
 $tests['serialize 1.x'] = massicot_decoder_parametres(serialize(array(
 	'zoom' => '1', 'x1' => '0', 'x2' => '100', 'y1' => '0', 'y2' => '50',
-))) === array('zoom' => 1.0, 'x1' => 0, 'x2' => 100, 'y1' => 0, 'y2' => 50, 'filtre' => 'aucun');
+))) === array('zoom' => 1.0, 'x1' => 0, 'x2' => 100, 'y1' => 0, 'y2' => 50, 'filtre' => 'aucun', 'rotation' => 0);
 $tests['filtre valide'] = massicot_normaliser_parametres(array(
 	'zoom' => 1, 'x1' => 0, 'x2' => 10, 'y1' => 0, 'y2' => 10, 'filtre' => 'sepia',
 ))['filtre'] === 'sepia';
 $tests['filtre inconnu neutralise'] = massicot_normaliser_parametres(array(
 	'zoom' => 1, 'x1' => 0, 'x2' => 10, 'y1' => 0, 'y2' => 10, 'filtre' => 'php_eval',
 ))['filtre'] === 'aucun';
+$tests['rotation quart de tour'] = massicot_normaliser_parametres(array(
+	'zoom' => 1, 'x1' => 0, 'x2' => 10, 'y1' => 0, 'y2' => 20, 'rotation' => -90,
+))['rotation'] === 270;
+$tests['rotation arbitraire neutralisee'] = massicot_normaliser_parametres(array(
+	'zoom' => 1, 'x1' => 0, 'x2' => 10, 'y1' => 0, 'y2' => 20, 'rotation' => 45,
+))['rotation'] === 0;
 $tests['formats raster'] = array_reduce(
 	array('jpg', 'jpeg', 'png', 'gif', 'webp'),
 	fn($ok, $extension) => $ok && massicot_extension_recadrable($extension),

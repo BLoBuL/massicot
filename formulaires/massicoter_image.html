@@ -29,6 +29,16 @@
 	  </div>
 	</fieldset>
 
+	<fieldset class="massicot-rotation">
+	  <legend><:massicot:rotation_titre:></legend>
+	  <div class="massicot-rotation-controles">
+	    <button type="button" class="btn btn_secondaire massicot-tourner" data-angle="-90" aria-label="<:massicot:rotation_gauche:>">↶</button>
+	    <output class="massicot-rotation-valeur">#ENV{rotation,0}°</output>
+	    <button type="button" class="btn btn_secondaire massicot-tourner" data-angle="90" aria-label="<:massicot:rotation_droite:>">↷</button>
+	  </div>
+	  <p class="explication"><:massicot:rotation_explication:></p>
+	</fieldset>
+
 	[(#ENV{_exif}|oui)
 	<details class="massicot-exif">
 	  <summary><:massicot:exif_titre:></summary>
@@ -63,7 +73,7 @@
 
 <div class="image-massicot" tabindex="0" aria-label="<:massicot:zone_recadrage:>">
   <div class="massicot-canevas">
-    [(#ENV{objet}|massicot_chemin_image{#ENV{id_objet}, #ENV{role}}|balise_img{'', 'no-adapt-img'})]
+    [(#ENV{_source_affichage}|balise_img{'', 'no-adapt-img'})]
     <div class="massicot-selection" tabindex="0" role="group" aria-label="<:massicot:selection_recadrage:>">
       <span class="massicot-poignee massicot-poignee-no" data-handle="nw" tabindex="0"></span>
       <span class="massicot-poignee massicot-poignee-ne" data-handle="ne" tabindex="0"></span>

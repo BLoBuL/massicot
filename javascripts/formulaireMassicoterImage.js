@@ -23,9 +23,11 @@
 		var reset = form.querySelector('.bouton_reset');
 		var filterButtons = form.querySelectorAll('.massicot-filtre');
 		var fields = {};
-		['x1', 'x2', 'y1', 'y2', 'zoom', 'filtre'].forEach(function (name) {
+		['x1', 'x2', 'y1', 'y2', 'zoom', 'filtre', 'rotation'].forEach(function (name) {
 			fields[name] = form.querySelector('[name="' + name + '"]');
 		});
+		var rotationButtons = form.querySelectorAll('.massicot-tourner');
+		var rotationValue = form.querySelector('.massicot-rotation-valeur');
 		var forced = options.forcer_dimensions || null;
 		var ratio = forced ? nombre(forced.largeur, 1) / nombre(forced.hauteur, 1) : null;
 		var sourceWidth = 0;
@@ -87,6 +89,13 @@
 				button.classList.toggle('on', selected);
 				button.setAttribute('aria-pressed', selected ? 'true' : 'false');
 			});
+		}
+
+		function applyRotation(rotation) {
+			rotation = ((nombre(rotation, 0) % 360) + 360) % 360;
+			if (![0, 90, 180, 270].includes(rotation)) { rotation = 0; }
+			fields.rotation.value = rotation;
+			rotationValue.value = rotation + '°';
 		}
 
 		function resizeFrom(handle, start, dx, dy) {
@@ -161,6 +170,7 @@
 		function resetAll() {
 			writeState({x1: 0, y1: 0, x2: sourceWidth, y2: sourceHeight, zoom: 1});
 			applyFilter('aucun');
+			applyRotation(0);
 		}
 
 		function ready() {
@@ -180,7 +190,13 @@
 			filterButtons.forEach(function (button) {
 				button.addEventListener('click', function () { applyFilter(button.dataset.filtre); });
 			});
+			rotationButtons.forEach(function (button) {
+				button.addEventListener('click', function () {
+					applyRotation(nombre(fields.rotation.value, 0) + nombre(button.dataset.angle, 0));
+				});
+			});
 			applyFilter(fields.filtre.value || 'aucun');
+			applyRotation(fields.rotation.value || 0);
 			form.classList.add('massicot-ready');
 		}
 

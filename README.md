@@ -37,6 +37,12 @@ Un panneau EXIF en lecture seule affiche les dimensions, le format et, quand
 ils existent, l’appareil, l’objectif et les réglages photographiques. Les
 coordonnées GPS et les champs libres ne sont jamais exposés.
 
+L’orientation EXIF est matérialisée avant le recadrage avec l’API adoptée par
+SPIP 5 (`image_oriente_selon_exif`) lorsqu’elle est disponible. Des boutons
+permettent ensuite une rotation de sortie à 90°, 180° ou 270°. Massicot contrôle
+les dimensions du dérivé SPIP et utilise un repli GD en cas de résultat
+incohérent, sans modifier le fichier éditorial original.
+
 ## Squelettes
 
 L’API explicite recommandée est :

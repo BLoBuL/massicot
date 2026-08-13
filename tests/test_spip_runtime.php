@@ -30,6 +30,35 @@ $formats = array(
 $tests = array();
 $testes = 0;
 
+function massicot_test_couleur($fichier, $x, $y) {
+	$infos = @getimagesize($fichier);
+	$chargeurs = array(IMAGETYPE_JPEG => 'imagecreatefromjpeg', IMAGETYPE_PNG => 'imagecreatefrompng', IMAGETYPE_GIF => 'imagecreatefromgif');
+	if (defined('IMAGETYPE_WEBP')) {
+		$chargeurs[IMAGETYPE_WEBP] = 'imagecreatefromwebp';
+	}
+	$chargeur = $infos ? ($chargeurs[$infos[2]] ?? '') : '';
+	$image = $chargeur && function_exists($chargeur) ? @$chargeur($fichier) : false;
+	if (!$image) { return array(); }
+	$couleur = imagecolorsforindex($image, imagecolorat($image, $x, $y));
+	imagedestroy($image);
+	return array($couleur['red'], $couleur['green'], $couleur['blue']);
+}
+
+function massicot_test_est_couleur($couleur, $attendue) {
+	return count($couleur) === 3
+		&& abs($couleur[0] - $attendue[0]) < 45
+		&& abs($couleur[1] - $attendue[1]) < 45
+		&& abs($couleur[2] - $attendue[2]) < 45;
+}
+
+function massicot_test_ajouter_orientation_exif($fichier, $orientation) {
+	$jpeg = file_get_contents($fichier);
+	$tiff = "II\x2A\x00" . pack('V', 8) . pack('v', 1)
+		. pack('vvVv', 0x0112, 3, 1, $orientation) . pack('v', 0) . pack('V', 0);
+	$app1 = "Exif\x00\x00" . $tiff;
+	file_put_contents($fichier, substr($jpeg, 0, 2) . "\xFF\xE1" . pack('n', strlen($app1) + 2) . $app1 . substr($jpeg, 2));
+}
+
 foreach ($formats as $extension => $encodeur) {
 	if (!function_exists('imagecreatetruecolor') || !function_exists($encodeur)) {
 		echo "SKIP {$extension}: encodeur indisponible\n";
@@ -38,8 +67,14 @@ foreach ($formats as $extension => $encodeur) {
 	$testes++;
 	$source = _DIR_TMP . 'massicot-runtime-' . $extension . '-' . uniqid() . '.' . $extension;
 	$image = imagecreatetruecolor(80, 60);
-	$couleur = imagecolorallocate($image, 230, 170, 20);
-	imagefill($image, 0, 0, $couleur);
+	$rouge = imagecolorallocate($image, 220, 20, 20);
+	$vert = imagecolorallocate($image, 20, 180, 20);
+	$bleu = imagecolorallocate($image, 20, 40, 220);
+	$jaune = imagecolorallocate($image, 230, 200, 20);
+	imagefilledrectangle($image, 0, 0, 39, 29, $rouge);
+	imagefilledrectangle($image, 40, 0, 79, 29, $vert);
+	imagefilledrectangle($image, 0, 30, 39, 59, $bleu);
+	imagefilledrectangle($image, 40, 30, 79, 59, $jaune);
 	$encodeur($image, $source);
 	imagedestroy($image);
 
@@ -59,7 +94,53 @@ foreach ($formats as $extension => $encodeur) {
 			&& $filtre_dimensions[0] === 60
 			&& $filtre_dimensions[1] === 50;
 	}
+	foreach (array(90 => array(50, 60), 180 => array(60, 50), 270 => array(50, 60)) as $rotation => $attendu) {
+		$rotation_derive = massicot_appliquer_rotation($derive, $rotation);
+		$rotation_dimensions = @getimagesize($rotation_derive);
+		$tests[$extension . '-rotation-spip-' . $rotation] = $rotation_dimensions
+			&& $rotation_dimensions[0] === $attendu[0]
+			&& $rotation_dimensions[1] === $attendu[1]
+			&& ($rotation !== 90 || massicot_test_est_couleur(massicot_test_couleur($rotation_derive, 4, 4), array(20, 40, 220)));
+		$rotation_repli = massicot_appliquer_rotation($derive, $rotation, true);
+		$repli_dimensions = @getimagesize($rotation_repli);
+		$tests[$extension . '-rotation-repli-' . $rotation] = $repli_dimensions
+			&& $repli_dimensions[0] === $attendu[0]
+			&& $repli_dimensions[1] === $attendu[1]
+			&& ($rotation !== 90 || massicot_test_est_couleur(massicot_test_couleur($rotation_repli, 4, 4), array(20, 40, 220)));
+	}
+	$chaine = massicoter_fichier($source, array(
+		'zoom' => 1, 'x1' => 10, 'x2' => 70, 'y1' => 5, 'y2' => 55,
+		'filtre' => 'sepia', 'rotation' => 90,
+	));
+	$chaine_dimensions = @getimagesize($chaine);
+	$tests[$extension . '-recadrage-filtre-rotation'] = $chaine_dimensions
+		&& $chaine_dimensions[0] === 50
+		&& $chaine_dimensions[1] === 60;
 	@unlink($source);
+}
+
+if (function_exists('imagejpeg') && function_exists('exif_read_data')) {
+	$source_exif = _DIR_TMP . 'massicot-runtime-exif-' . uniqid() . '.jpg';
+	$image_exif = imagecreatetruecolor(80, 60);
+	$rouge = imagecolorallocate($image_exif, 220, 20, 20);
+	$vert = imagecolorallocate($image_exif, 20, 180, 20);
+	$bleu = imagecolorallocate($image_exif, 20, 40, 220);
+	$jaune = imagecolorallocate($image_exif, 230, 200, 20);
+	imagefilledrectangle($image_exif, 0, 0, 39, 29, $rouge);
+	imagefilledrectangle($image_exif, 40, 0, 79, 29, $vert);
+	imagefilledrectangle($image_exif, 0, 30, 39, 59, $bleu);
+	imagefilledrectangle($image_exif, 40, 30, 79, 59, $jaune);
+	imagejpeg($image_exif, $source_exif, 95);
+	imagedestroy($image_exif);
+	massicot_test_ajouter_orientation_exif($source_exif, 6);
+	$tests['exif-orientation-lue'] = massicot_orientation_exif($source_exif) === 6;
+	$source_orientee = massicot_orienter_selon_exif($source_exif);
+	$dimensions_orientees = @getimagesize($source_orientee);
+	$tests['exif-orientation-materialisee'] = $dimensions_orientees
+		&& $dimensions_orientees[0] === 60
+		&& $dimensions_orientees[1] === 80
+		&& massicot_test_est_couleur(massicot_test_couleur($source_orientee, 4, 4), array(20, 40, 220));
+	@unlink($source_exif);
 }
 
 if (!$testes) {

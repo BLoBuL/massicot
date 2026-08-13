@@ -32,6 +32,12 @@ function formulaires_massicoter_image_saisies_dist($objet, $id_objet, $redirect,
 		array(
 			'saisie' => 'hidden',
 			'options' => array(
+				'nom' => 'rotation',
+			),
+		),
+		array(
+			'saisie' => 'hidden',
+			'options' => array(
 				'nom' => 'x1',
 			),
 		),
@@ -115,7 +121,9 @@ function formulaires_massicoter_image_charger_dist($objet, $id_objet, $redirect,
 		massicot_filtres_disponibles(),
 		array_map(fn($filtre) => _T('massicot:filtre_' . $filtre), massicot_filtres_disponibles())
 	);
-	$parametres['_exif'] = massicot_lire_exif(massicot_chemin_image($objet, $id_objet, $role));
+	$source = massicot_chemin_image($objet, $id_objet, $role);
+	$parametres['_exif'] = massicot_lire_exif($source);
+	$parametres['_source_affichage'] = massicot_orienter_selon_exif($source);
 
 	return $parametres;
 }
@@ -132,7 +140,7 @@ function formulaires_massicoter_image_verifier_dist($objet, $id_objet, $redirect
 	if (!autoriser('massicoter', $objet, $id_objet)) {
 		return array('message_erreur' => _T('massicot:operation_non_autorisee'));
 	}
-	$chemin = massicot_chemin_image($objet, $id_objet, $role);
+	$chemin = massicot_orienter_selon_exif(massicot_chemin_image($objet, $id_objet, $role));
 	$dimensions = $chemin ? @getimagesize($chemin) : false;
 	if (!$dimensions) {
 		$erreurs['message_erreur'] = _T('massicot:erreur_fichier_image');
@@ -146,6 +154,7 @@ function formulaires_massicoter_image_verifier_dist($objet, $id_objet, $redirect
 		'y1' => _request('y1'),
 		'y2' => _request('y2'),
 		'filtre' => _request('filtre'),
+		'rotation' => _request('rotation'),
 	);
 	if (!massicot_normaliser_parametres($parametres, $dimensions[0], $dimensions[1])) {
 		$erreurs['message_erreur'] = _T('massicot:erreur_parametres_invalides');
@@ -176,6 +185,7 @@ function formulaires_massicoter_image_traiter_dist($objet, $id_objet, $redirect,
 			'y1'   => _request('y1'),
 			'y2'   => _request('y2'),
 			'filtre' => _request('filtre'),
+			'rotation' => _request('rotation'),
 			'role' => $role,
 		);
 

@@ -95,6 +95,14 @@ function massicot_filtres_disponibles() {
 }
 
 /**
+ * Rotations de sortie admises. Les quarts de tour sont suffisants pour
+ * corriger l'orientation d'une photographie sans interpolation arbitraire.
+ */
+function massicot_rotations_disponibles() {
+	return array(0, 90, 180, 270);
+}
+
+/**
  * Vérifie qu'une source est une image raster réellement lisible.
  */
 function massicot_fichier_recadrable($fichier) {
@@ -141,6 +149,10 @@ function massicot_normaliser_parametres($parametres, $largeur = null, $hauteur =
 	);
 	$filtre = isset($parametres['filtre']) ? strtolower(trim((string) $parametres['filtre'])) : 'aucun';
 	$normalises['filtre'] = in_array($filtre, massicot_filtres_disponibles(), true) ? $filtre : 'aucun';
+	$rotation = isset($parametres['rotation']) && is_numeric($parametres['rotation'])
+		? ((int) round((float) $parametres['rotation']) % 360 + 360) % 360
+		: 0;
+	$normalises['rotation'] = in_array($rotation, massicot_rotations_disponibles(), true) ? $rotation : 0;
 
 	if ($normalises['zoom'] < 0.01 || $normalises['zoom'] > 10
 		|| $normalises['x1'] < 0 || $normalises['y1'] < 0
@@ -501,6 +513,8 @@ function massicoter_fichier($fichier, $parametres) {
 		}
 	}
 
+	$fichier = massicot_orienter_selon_exif($fichier);
+
 	$parametres = massicot_normaliser_parametres($parametres);
 
 	/* ne rien faire s'il n'y a pas de massicotage défini ou valide */
@@ -519,6 +533,7 @@ function massicoter_fichier($fichier, $parametres) {
 		&& $parametres['y1'] === 0
 		&& $parametres['y2'] === $height
 		&& ($parametres['filtre'] ?? 'aucun') === 'aucun'
+		&& ($parametres['rotation'] ?? 0) === 0
 		) {
 		// Ne rien faire si rien ne change
 		return $fichier;
@@ -579,8 +594,181 @@ function massicoter_fichier($fichier, $parametres) {
 	);
 
 	$fichier = massicot_appliquer_filtre_spip($fichier, $parametres['filtre'] ?? 'aucun');
+	$fichier = massicot_appliquer_rotation($fichier, $parametres['rotation'] ?? 0);
 
 	return $fichier;
+}
+
+/**
+ * Applique un quart de tour et contrôle le résultat de SPIP.
+ *
+ * Certaines combinaisons SPIP 4 / GD / EXIF retournent une image non tournée
+ * ou aux dimensions erronées à 90 degrés. On conserve le filtre natif comme
+ * chemin principal, puis on utilise un repli GD mis en cache si son résultat
+ * n'est pas exploitable.
+ */
+function massicot_appliquer_rotation($fichier, $rotation, $forcer_repli = false) {
+	$rotation = is_numeric($rotation) ? ((int) round((float) $rotation) % 360 + 360) % 360 : 0;
+	if (!in_array($rotation, massicot_rotations_disponibles(), true) || $rotation === 0) {
+		return $fichier;
+	}
+	$source = parse_url((string) $fichier, PHP_URL_PATH) ?: $fichier;
+	$dimensions_source = @getimagesize($source);
+	if (!$dimensions_source) {
+		return $fichier;
+	}
+	$largeur_attendue = in_array($rotation, array(90, 270), true) ? $dimensions_source[1] : $dimensions_source[0];
+	$hauteur_attendue = in_array($rotation, array(90, 270), true) ? $dimensions_source[0] : $dimensions_source[1];
+
+	if (!$forcer_repli) {
+		include_spip('inc/filtres');
+		include_spip('filtres/images_transforme');
+		$balise = image_rotation($fichier, $rotation, false);
+		$derive = is_string($balise) ? (extraire_attribut($balise, 'src') ?: $balise) : '';
+		$dimensions_derive = $derive ? @getimagesize(parse_url($derive, PHP_URL_PATH) ?: $derive) : false;
+		if ($dimensions_derive
+			&& $dimensions_derive[0] === $largeur_attendue
+			&& $dimensions_derive[1] === $hauteur_attendue) {
+			return $derive;
+		}
+		spip_log(
+			"Rotation SPIP non conforme ({$rotation} degres) pour {$source}, repli GD",
+			'massicot.' . _LOG_AVERTISSEMENT
+		);
+	}
+
+	$repli = massicot_rotation_gd($source, $rotation);
+	if (!$repli) {
+		return $fichier;
+	}
+	$dimensions_repli = @getimagesize($repli);
+	return ($dimensions_repli
+		&& $dimensions_repli[0] === $largeur_attendue
+		&& $dimensions_repli[1] === $hauteur_attendue)
+		? $repli
+		: $fichier;
+}
+
+/**
+ * Matérialise l'orientation EXIF avant tout recadrage.
+ *
+ * Les navigateurs savent souvent afficher l'orientation sans modifier les
+ * pixels, contrairement à certains usages CSS ou filtres SPIP 4. Massicot
+ * travaille ainsi sur une source dont pixels et dimensions sont cohérents.
+ */
+function massicot_orienter_selon_exif($fichier) {
+	$orientation = massicot_orientation_exif($fichier);
+	if ($orientation <= 1 || $orientation > 8) {
+		return $fichier;
+	}
+	$dimensions_source = @getimagesize($fichier);
+	$largeur_attendue = in_array($orientation, array(5, 6, 7, 8), true)
+		? ($dimensions_source[1] ?? 0)
+		: ($dimensions_source[0] ?? 0);
+	$hauteur_attendue = in_array($orientation, array(5, 6, 7, 8), true)
+		? ($dimensions_source[0] ?? 0)
+		: ($dimensions_source[1] ?? 0);
+
+	// Même chemin que SPIP 5 et que son rétroport récent dans Filtres Images.
+	include_spip('filtres/images_transforme');
+	if (function_exists('image_oriente_selon_exif')) {
+		$balise = image_oriente_selon_exif($fichier);
+		$derive_spip = is_string($balise) ? (extraire_attribut($balise, 'src') ?: $balise) : '';
+		$dimensions_spip = $derive_spip ? @getimagesize(parse_url($derive_spip, PHP_URL_PATH) ?: $derive_spip) : false;
+		if ($dimensions_spip
+			&& $dimensions_spip[0] === $largeur_attendue
+			&& $dimensions_spip[1] === $hauteur_attendue) {
+			return $derive_spip;
+		}
+	}
+	$miroir_horizontal = in_array($orientation, array(2, 4, 5, 7), true);
+	$rotation = array(3 => 180, 4 => 180, 5 => 270, 6 => 90, 7 => 90, 8 => 270)[$orientation] ?? 0;
+	$derive = massicot_transformation_gd($fichier, $rotation, $miroir_horizontal, 'exif-' . $orientation);
+	return $derive ?: $fichier;
+}
+
+/**
+ * Lit uniquement le champ EXIF Orientation des JPEG.
+ */
+function massicot_orientation_exif($fichier) {
+	if (!function_exists('exif_read_data')
+		|| !preg_match('/\.jpe?g$/i', parse_url((string) $fichier, PHP_URL_PATH) ?: $fichier)) {
+		return 1;
+	}
+	$exif = @exif_read_data($fichier, 'IFD0', true, false);
+	$orientation = (int) ($exif['IFD0']['Orientation'] ?? $exif['Orientation'] ?? 1);
+	return ($orientation >= 1 && $orientation <= 8) ? $orientation : 1;
+}
+
+/**
+ * Repli fiable pour les rotations orthogonales, avec transparence préservée.
+ */
+function massicot_rotation_gd($fichier, $rotation) {
+	return massicot_transformation_gd($fichier, $rotation, false, 'rotation-' . $rotation);
+}
+
+/**
+ * Transformation GD commune au repli de rotation et à l'orientation EXIF.
+ */
+function massicot_transformation_gd($fichier, $rotation, $miroir_horizontal = false, $operation = 'transformation') {
+	$infos = @getimagesize($fichier);
+	if (!$infos || !function_exists('imagerotate') || ($miroir_horizontal && !function_exists('imageflip'))) {
+		return '';
+	}
+	$type = $infos[2] ?? 0;
+	$entrees = array(
+		IMAGETYPE_JPEG => array('imagecreatefromjpeg', 'imagejpeg', 'jpg'),
+		IMAGETYPE_PNG => array('imagecreatefrompng', 'imagepng', 'png'),
+		IMAGETYPE_GIF => array('imagecreatefromgif', 'imagegif', 'gif'),
+	);
+	if (defined('IMAGETYPE_WEBP')) {
+		$entrees[IMAGETYPE_WEBP] = array('imagecreatefromwebp', 'imagewebp', 'webp');
+	}
+	if (!isset($entrees[$type])) {
+		return '';
+	}
+	[$chargeur, $encodeur, $extension] = $entrees[$type];
+	if (!function_exists($chargeur) || !function_exists($encodeur)) {
+		return '';
+	}
+	include_spip('inc/flock');
+	$repertoire = sous_repertoire(_DIR_VAR, 'cache-massicot');
+	$empreinte = hash('sha256', 'transformation-v2|' . realpath($fichier) . '|' . @filemtime($fichier) . '|' . @filesize($fichier) . '|' . $operation . '|' . $rotation . '|' . (int) $miroir_horizontal);
+	$destination = $repertoire . preg_replace('/[^a-z0-9-]/i', '-', $operation) . '-' . $empreinte . '.' . $extension;
+	if (is_file($destination)) {
+		return $destination;
+	}
+	$image = @$chargeur($fichier);
+	if (!$image) {
+		return '';
+	}
+	if (function_exists('imagepalettetotruecolor')) {
+		@imagepalettetotruecolor($image);
+	}
+	if ($miroir_horizontal) {
+		@imageflip($image, IMG_FLIP_HORIZONTAL);
+	}
+	$transparent = imagecolorallocatealpha($image, 0, 0, 0, 127);
+	$tournee = $rotation ? @imagerotate($image, 360 - $rotation, $transparent) : $image;
+	if (!$tournee) {
+		imagedestroy($image);
+		return '';
+	}
+	if ($type === IMAGETYPE_PNG || (defined('IMAGETYPE_WEBP') && $type === IMAGETYPE_WEBP)) {
+		imagealphablending($tournee, false);
+		imagesavealpha($tournee, true);
+	}
+	$ecrit = match ($type) {
+		IMAGETYPE_JPEG => @$encodeur($tournee, $destination, 90),
+		IMAGETYPE_PNG => @$encodeur($tournee, $destination, 6),
+		defined('IMAGETYPE_WEBP') ? IMAGETYPE_WEBP : -1 => @$encodeur($tournee, $destination, 90),
+		default => @$encodeur($tournee, $destination),
+	};
+	if ($tournee !== $image) {
+		imagedestroy($tournee);
+	}
+	imagedestroy($image);
+	return $ecrit && is_file($destination) ? $destination : '';
 }
 
 /**
