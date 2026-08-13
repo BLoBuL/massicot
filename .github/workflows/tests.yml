@@ -1,0 +1,46 @@
+name: Tests
+
+on:
+  push:
+    branches: [dev, master]
+  pull_request:
+
+jobs:
+  spip:
+    name: SPIP ${{ matrix.spip }} / PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - spip: 4.2.17
+            php: '8.1'
+          - spip: 4.4.19
+            php: '8.4'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: gd
+          coverage: none
+      - name: Installer SPIP
+        run: |
+          curl --fail --location --silent --show-error \
+            "https://files.spip.net/spip/archives/spip-v${{ matrix.spip }}.zip" \
+            --output "$RUNNER_TEMP/spip.zip"
+          unzip -q "$RUNNER_TEMP/spip.zip" -d "$RUNNER_TEMP/spip"
+      - name: Tests autonomes
+        run: |
+          php tests/test_parametres.php
+          php tests/test_migration.php
+          php tests/test_cache.php
+          php tests/test_autorisations.php
+      - name: Tests dans le runtime SPIP
+        env:
+          SPIP_ROOT: ${{ runner.temp }}/spip
+        run: php tests/test_spip_runtime.php
+      - name: Syntaxe
+        run: |
+          find . -name '*.php' -print0 | xargs -0 -n1 php -l
+          node --check javascripts/formulaireMassicoterImage.js
