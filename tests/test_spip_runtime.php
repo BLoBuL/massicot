@@ -8,11 +8,17 @@ if (!$racine_spip || !is_file($racine_spip . '/ecrire/inc_version.php')) {
 
 chdir($racine_spip);
 define('_FILE_CONNECT', 'massicot-tests');
+if (is_file('vendor/autoload.php')) {
+	require 'vendor/autoload.php';
+}
 require 'ecrire/inc_version.php';
 include_spip('inc/filtres');
 include_spip('inc/filtres_images_mini');
 include_spip('filtres/images_transforme');
 require dirname(__DIR__) . '/massicot_fonctions.php';
+
+$GLOBALS['meta']['image_process'] = 'gd2';
+$GLOBALS['meta']['gd_formats'] = 'jpg,png,gif,webp';
 
 $version = $GLOBALS['spip_version_affichee'] ?? 'inconnue';
 $formats = array(
@@ -20,7 +26,6 @@ $formats = array(
 	'png' => 'imagepng',
 	'gif' => 'imagegif',
 	'webp' => 'imagewebp',
-	'avif' => 'imageavif',
 );
 $tests = array();
 $testes = 0;

@@ -8,11 +8,13 @@ par les filtres d’image et le cache natifs de SPIP.
 
 - SPIP 4.x ;
 - PHP 8.0 ou supérieur ;
-- JPEG, PNG, GIF, WebP et AVIF selon le moteur d’image disponible ;
+- JPEG, PNG, GIF et WebP selon le moteur d’image disponible ;
 - images locales et distantes, ces dernières étant localisées avec
   `copie_locale()`.
 
-SVG et les documents non raster ne proposent pas l’action de recadrage.
+AVIF, SVG et les documents non raster ne proposent pas l’action de recadrage :
+les filtres d’image natifs communs à SPIP 4.2 et 4.4 ne prennent pas en charge
+AVIF de façon portable.
 
 ## Interface
 

@@ -24,12 +24,13 @@ $tests['serialize 1.x'] = massicot_decoder_parametres(serialize(array(
 	'zoom' => '1', 'x1' => '0', 'x2' => '100', 'y1' => '0', 'y2' => '50',
 ))) === array('zoom' => 1.0, 'x1' => 0, 'x2' => 100, 'y1' => 0, 'y2' => 50);
 $tests['formats raster'] = array_reduce(
-	array('jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'),
+	array('jpg', 'jpeg', 'png', 'gif', 'webp'),
 	fn($ok, $extension) => $ok && massicot_extension_recadrable($extension),
 	true
 );
 $tests['formats vectoriels ou non images refuses'] = !massicot_extension_recadrable('svg')
-	&& !massicot_extension_recadrable('pdf');
+	&& !massicot_extension_recadrable('pdf')
+	&& !massicot_extension_recadrable('avif');
 
 $echecs = array_keys(array_filter($tests, fn($ok) => !$ok));
 if ($echecs) {

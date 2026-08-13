@@ -83,7 +83,7 @@ function massicot_localiser_image($fichier) {
  */
 function massicot_extension_recadrable($extension) {
 	return in_array(strtolower((string) $extension), array(
-		'jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'
+		'jpg', 'jpeg', 'png', 'gif', 'webp'
 	), true);
 }
 

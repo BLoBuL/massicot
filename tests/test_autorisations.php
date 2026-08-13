@@ -17,10 +17,10 @@ require dirname(__DIR__) . '/massicot_pipelines.php';
 
 $qui = array('id_auteur' => 1);
 $tests = array();
-foreach (array('jpg', 'jpeg', 'png', 'gif', 'webp', 'avif') as $extension_document) {
+foreach (array('jpg', 'jpeg', 'png', 'gif', 'webp') as $extension_document) {
 	$tests[$extension_document] = autoriser_massicoter_dist('massicoter', 'document', 1, $qui, array());
 }
-foreach (array('svg', 'pdf', 'txt') as $extension_document) {
+foreach (array('avif', 'svg', 'pdf', 'txt') as $extension_document) {
 	$tests['refus ' . $extension_document] = !autoriser_massicoter_dist(
 		'massicoter', 'document', 1, $qui, array()
 	);
