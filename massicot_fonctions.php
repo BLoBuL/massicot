@@ -714,26 +714,22 @@ function massicoter_logo_document($logo, $doc = array()) {
 	/* S'il n'y a pas de fichier dans la pile, on va le chercher dans
 	   la table documents */
 	if (! isset($doc['fichier'])) {
-		$rows = sql_allfetsel(
+		$row = sql_fetsel(
 			'fichier, extension',
 			'spip_documents',
 			'id_document='.intval($doc['id_document'])
 		);
-
-		$doc['fichier']	  = $rows[0]['fichier'];
-		$doc['extension'] = $rows[0]['extension'];
+		if (!$row) {
+			return $logo;
+		}
+		$doc['fichier'] = $row['fichier'];
+		$doc['extension'] = $row['extension'];
 	}
 
 	/* Si le document en question n'est pas une image, on ne fait rien */
 	if ((! $logo)
-		or (isset($doc['extension']) && preg_match('/^(jpe?g|png|gif)$/i', $doc['extension']) === 0)) {
+		or (isset($doc['extension']) && !massicot_extension_recadrable($doc['extension']))) {
 		return $logo;
-	}
-
-	/* S'il y a un lien sur le logo, on le met de côté pour le
-	   remettre après massicotage */
-	if (preg_match('#(<a.*?>)<img.*$#', $logo) === 1) {
-		$lien = preg_replace('#(<a.*?>)<img.*$#', '$1', $logo);
 	}
 
 	$fichier = extraire_attribut($logo, 'src');
@@ -747,29 +743,35 @@ function massicoter_logo_document($logo, $doc = array()) {
 	list($largeur_logo, $hauteur_logo) =
 		getimagesize($fichier);
 
-	$balise_img = charger_filtre('balise_img');
-
 	$fichier_massicote = massicoter_document(get_spip_doc($doc['fichier']));
 
 	/* Comme le logo reçu en paramètre peut avoir été réduit grâce aux
 	   paramètres de la balise LOGO_, il faut s'assurer que l'image
 	   qu'on renvoie fait bien la même taille que le logo qu'on a
 	   reçu. */
-	$balise = image_reduire(
-		$balise_img(
-			$fichier_massicote,
-			extraire_attribut($logo, 'alt'),
-			extraire_attribut($logo, 'class')
-		),
+	$balise_reduite = image_reduire(
+		$fichier_massicote,
 		$largeur_logo,
 		$hauteur_logo
 	);
-
-	if (isset($lien)) {
-		$balise = $lien . $balise . '</a>';
-	}
-
-	return $balise;
+	$src_reduit = extraire_attribut($balise_reduite, 'src');
+	$largeur_reduite = extraire_attribut($balise_reduite, 'width');
+	$hauteur_reduite = extraire_attribut($balise_reduite, 'height');
+	return preg_replace_callback(
+		'#<img\\b[^>]*>#i',
+		function ($match) use ($src_reduit, $largeur_reduite, $hauteur_reduite) {
+			$balise = inserer_attribut($match[0], 'src', $src_reduit);
+			if ($largeur_reduite) {
+				$balise = inserer_attribut($balise, 'width', $largeur_reduite);
+			}
+			if ($hauteur_reduite) {
+				$balise = inserer_attribut($balise, 'height', $hauteur_reduite);
+			}
+			return $balise;
+		},
+		$logo,
+		1
+	);
 }
 
 /**
@@ -790,8 +792,6 @@ function massicoter_logo($logo, $objet_type = null, $id_objet = null, $role = nu
 	}
 
 	$src     = extraire_attribut($logo, 'src');
-	$alt     = extraire_attribut($logo, 'alt');
-	$classes = extraire_attribut($logo, 'class');
 	$onmouseover = extraire_attribut($logo, 'onmouseover');
 	$onmouseout  = extraire_attribut($logo, 'onmouseout');
 
@@ -841,13 +841,21 @@ function massicoter_logo($logo, $objet_type = null, $id_objet = null, $role = nu
 		$onmouseover = str_replace($src_off, $fichier_off, $onmouseover);
 	}
 
-	$balise_img = charger_filtre('balise_img');
-
-	$balise = $balise_img($fichier, $alt, $classes);
-	$balise = inserer_attribut($balise, 'onmouseover', $onmouseover);
-	$balise = inserer_attribut($balise, 'onmouseout', $onmouseout);
-
-	return $balise;
+	return preg_replace_callback(
+		'#<img\\b[^>]*>#i',
+		function ($match) use ($fichier, $onmouseover, $onmouseout) {
+			$balise = inserer_attribut($match[0], 'src', $fichier);
+			if ($onmouseover) {
+				$balise = inserer_attribut($balise, 'onmouseover', $onmouseover);
+			}
+			if ($onmouseout) {
+				$balise = inserer_attribut($balise, 'onmouseout', $onmouseout);
+			}
+			return $balise;
+		},
+		$logo,
+		1
+	);
 }
 
 /**
