@@ -33,6 +33,8 @@
 .massicot-champs:empty { display: none; }
 .massicot-champs > ul { margin: 0; }
 .massicot-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
+.massicot-actions-logo,
+.massicot-actions-document { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
 
 .image-massicot {
 	max-width: 100%;

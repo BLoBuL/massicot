@@ -1,0 +1,8 @@
+<BOUCLE_document(DOCUMENTS) {id_document}{media=image}{tout}>
+[(#AUTORISER{massicoter,document,#ID_DOCUMENT}|oui)
+<div class="massicot-actions-document actions">
+	<a class="btn btn_secondaire" href="[(#URL_ECRIRE{massicoter_image,objet=document&id_objet=#ID_DOCUMENT}|parametre_url{redirect,#ENV{redirect}})]">
+		<:massicot:massicoter:>
+	</a>
+</div>]
+</BOUCLE_document>

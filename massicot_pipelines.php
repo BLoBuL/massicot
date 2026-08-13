@@ -143,7 +143,31 @@ function massicot_header_prive($flux) {
  * surcharger son squelette complet.
  */
 function massicot_formulaire_fond($flux) {
-	if (($flux['args']['form'] ?? '') !== 'editer_logo') {
+	$form = $flux['args']['form'] ?? '';
+	if ($form === 'editer_document') {
+		include_spip('inc/autoriser');
+		$contexte = $flux['args']['contexte'] ?? array();
+		$args = $flux['args']['args'] ?? array();
+		$id_document = (int) ($contexte['id_document'] ?? ($args[0] ?? 0));
+		if (!$id_document || !autoriser('massicoter', 'document', $id_document)) {
+			return $flux;
+		}
+		$actions = recuperer_fond(
+			'prive/squelettes/inclure/massicot_actions_document',
+			array('id_document' => $id_document, 'redirect' => self())
+		);
+		if ($actions) {
+			$flux['data'] = preg_replace('#</form>#i', $actions . '</form>', $flux['data'], 1);
+		}
+		$flux['data'] = massicot_appliquer_recadrage_html(
+			$flux['data'],
+			'document',
+			$id_document
+		);
+		return $flux;
+	}
+
+	if ($form !== 'editer_logo') {
 		return $flux;
 	}
 
