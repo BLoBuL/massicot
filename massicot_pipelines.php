@@ -73,22 +73,6 @@ function massicot_jquery_plugins($scripts) {
 }
 
 /**
- * Ajouter un brin de CSS
- *
- * @pipeline header_prive
- * @param  array $flux Données du pipeline
- * @return array	   Données du pipeline
- */
-function massicot_header_prive($flux) {
-	if (test_espace_prive() && _request('exec') === 'massicoter_image') {
-		$flux .= '<link rel="stylesheet" type="text/css" media="screen" href="' .
-			  find_in_path('css/massicot.css') . '" />';
-
-	}
-	return $flux;
-}
-
-/**
  * Ajouter une action "recadrer" sur les documents
  *
  * @pipeline editer_document_actions
