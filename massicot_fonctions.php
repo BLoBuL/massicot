@@ -31,7 +31,17 @@ function massicot_chemin_image($objet, $id_objet, $role = null) {
 			'spip_documents',
 			'id_document='.intval($id_objet)
 		);
-		$chemin = $fichier ? find_in_path(_NOM_PERMANENTS_ACCESSIBLES . $fichier) : '';
+		if (!$fichier) {
+			return '';
+		}
+		if (preg_match('#^https?://#i', $fichier)) {
+			return massicot_localiser_image($fichier);
+		}
+		include_spip('inc/documents');
+		$chemin = get_spip_doc($fichier);
+		if (!file_exists($chemin)) {
+			$chemin = find_in_path(_NOM_PERMANENTS_ACCESSIBLES . $fichier);
+		}
 		return massicot_localiser_image($chemin);
 	} else {
 		if ($role === 'logo_survol') {
