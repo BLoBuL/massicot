@@ -89,6 +89,7 @@ function formulaires_massicoter_image_charger_dist($objet, $id_objet, $redirect,
 	}
 
 	$parametres = massicot_get_parametres($objet, $id_objet, $role);
+	$recadrage_existant = (bool) $parametres;
 
 	if (! $parametres) {
 		$parametres = array(
@@ -103,6 +104,7 @@ function formulaires_massicoter_image_charger_dist($objet, $id_objet, $redirect,
 	$parametres['objet']	= $objet;
 	$parametres['id_objet'] = $id_objet;
 	$parametres['role']     = $role;
+	$parametres['_recadrage_existant'] = $recadrage_existant;
 
 	return $parametres;
 }
@@ -112,7 +114,7 @@ function formulaires_massicoter_image_charger_dist($objet, $id_objet, $redirect,
  */
 function formulaires_massicoter_image_verifier_dist($objet, $id_objet, $redirect, $format = null, $role = null) {
 	$erreurs = array();
-	if (_request('annuler')) {
+	if (_request('annuler') || _request('supprimer_recadrage')) {
 		return $erreurs;
 	}
 	include_spip('inc/autoriser');
@@ -150,7 +152,11 @@ function formulaires_massicoter_image_verifier_dist($objet, $id_objet, $redirect
  */
 function formulaires_massicoter_image_traiter_dist($objet, $id_objet, $redirect, $format = null, $role = null) {
 
-	if (! _request('annuler')) {
+	if (_request('supprimer_recadrage')) {
+		if ($err = massicot_supprimer($objet, $id_objet, (string) $role)) {
+			return array('message_erreur' => $err);
+		}
+	} elseif (! _request('annuler')) {
 		$parametres = array(
 			'zoom' => _request('zoom'),
 			'x1'   => _request('x1'),

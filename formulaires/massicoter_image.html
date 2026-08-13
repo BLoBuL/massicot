@@ -26,6 +26,8 @@
     <div class="boutons massicot-actions">
       <span class="image_loading"></span>
       <button type="button" class="btn btn_secondaire bouton_reset"><:massicot:reinitialiser:></button>
+      [(#ENV{_recadrage_existant}|oui)
+      <button type="submit" class="btn btn_danger submit" name="supprimer_recadrage" value="oui"><:massicot:supprimer_recadrage:></button>]
       <input type="submit" class="btn btn_secondaire submit" name="annuler" value="<:massicot:label_annuler:>" />
       <input type="submit" class="btn btn_primaire submit" value="[(#ENV{saisies_texte_submit}|sinon{<:massicot:massicoter:>})]" />
     </div>

@@ -8,6 +8,7 @@ if (!defined('_ECRIRE_INC_VERSION')) {
 }
 
 $GLOBALS[$GLOBALS['idx_lang']] = array(
+	'supprimer_recadrage' => 'Remover recorte',
 
 	// E
 	'erreur_image_trop_petite' => 'Esta imagem é muito pequena para este formato.',
