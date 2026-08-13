@@ -127,9 +127,9 @@ function massicot_formulaire_traiter($flux) {
 }
 
 /**
- * Charge la feuille du recadreur avec le pipeline CSS natif de SPIP 4.
+ * Charge la feuille du recadreur dans l'en-tête de l'espace privé.
  */
-function massicot_insert_head_css($flux) {
+function massicot_header_prive($flux) {
 	if (test_espace_prive() && _request('exec') === 'massicoter_image') {
 		include_spip('inc/filtres');
 		$css = timestamp(find_in_path('css/massicot.css'));
