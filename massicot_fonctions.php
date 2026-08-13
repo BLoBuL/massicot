@@ -525,11 +525,11 @@ function massicoter_fichier($fichier, $parametres) {
 		);
 	} else {
 		$fichier = extraire_attribut(
-			image_recadre(
+			image_passe_partout(
 				$fichier,
 				intval($parametres['zoom'] * $width),
 				intval($parametres['zoom'] * $height),
-				'center'
+				true
 			),
 			'src'
 		);
