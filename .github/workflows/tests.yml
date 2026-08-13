@@ -36,6 +36,7 @@ jobs:
           php tests/test_migration.php
           php tests/test_cache.php
           php tests/test_autorisations.php
+          php tests/test_html.php
       - name: Tests dans le runtime SPIP
         env:
           SPIP_ROOT: ${{ runner.temp }}/spip
