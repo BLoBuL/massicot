@@ -101,6 +101,32 @@ function formulaires_massicoter_image_charger_dist($objet, $id_objet, $redirect,
 }
 
 /**
+ * Verifie cote serveur les coordonnees envoyees par le navigateur.
+ */
+function formulaires_massicoter_image_verifier_dist($objet, $id_objet, $redirect, $format = null, $role = null) {
+	$erreurs = array();
+	$chemin = massicot_chemin_image($objet, $id_objet, $role);
+	$dimensions = $chemin ? @getimagesize($chemin) : false;
+	if (!$dimensions) {
+		$erreurs['message_erreur'] = _T('massicot:erreur_fichier_image');
+		return $erreurs;
+	}
+
+	$parametres = array(
+		'zoom' => _request('zoom'),
+		'x1' => _request('x1'),
+		'x2' => _request('x2'),
+		'y1' => _request('y1'),
+		'y2' => _request('y2'),
+	);
+	if (!massicot_normaliser_parametres($parametres, $dimensions[0], $dimensions[1])) {
+		$erreurs['message_erreur'] = _T('massicot:erreur_parametres_invalides');
+	}
+
+	return $erreurs;
+}
+
+/**
  * Traitement du formulaire de massicotage
  *
  * Traiter les champs postés
@@ -122,6 +148,7 @@ function formulaires_massicoter_image_traiter_dist($objet, $id_objet, $redirect,
 
 		if ($err = massicot_enregistrer($objet, $id_objet, $parametres)) {
 			spip_log($err, 'massicot.'._LOG_ERREUR);
+			return array('message_erreur' => $err);
 		}
 	}
 

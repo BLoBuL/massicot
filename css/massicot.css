@@ -8,7 +8,8 @@
 }
 
 .image-massicot {
-  heigth: auto;
+  height: auto;
+	overflow: auto;
   text-align: center;
 }
 

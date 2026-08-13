@@ -65,7 +65,7 @@ function autoriser_massicoter_dist($faire, $type, $id, $qui, $opt) {
  */
 function massicot_jquery_plugins($scripts) {
 
-	if (test_espace_prive()) {
+	if (test_espace_prive() && _request('exec') === 'massicoter_image') {
 		$scripts[] = 'lib/jquery.imgareaselect.js/jquery.imgareaselect.dev.js';
 		$scripts[] = 'javascripts/formulaireMassicoterImage.js';
 	}
@@ -82,9 +82,6 @@ function massicot_jquery_plugins($scripts) {
  */
 function massicot_jqueryui_plugins($scripts) {
 
-	if (version_compare($GLOBALS['spip_version_branche'], '3.2', '<') and test_espace_prive()) {
-		$scripts[] = 'jquery.ui.slider';
-	}
 	return $scripts;
 }
 
@@ -96,7 +93,7 @@ function massicot_jqueryui_plugins($scripts) {
  * @return array	   Données du pipeline
  */
 function massicot_header_prive($flux) {
-	if (test_espace_prive()) {
+	if (test_espace_prive() && _request('exec') === 'massicoter_image') {
 		$flux .= '<link rel="stylesheet" type="text/css" media="screen" href="' .
 			  find_in_path('css/massicot.css') . '" />';
 
@@ -134,30 +131,7 @@ function massicot_post_edition($flux) {
 
 	if (isset($flux['args']['type']) and ($flux['args']['type'] === 'document')
 	    and isset($flux['data']['fichier'])) {
-		include_spip('base/abstract_sql');
-		include_spip('action/editer_liens');
-
-		$id_document = $flux['args']['id_objet'];
-
-		$massicotages = objet_trouver_liens(
-			array('massicotage' => '*'),
-			array('document' => $id_document)
-		);
-
-		$id_massicotages = array();
-
-		foreach ($massicotages as $cle => $valeur) {
-			$id_massicotages[] = $valeur['id_massicotage'];
-		}
-
-		sql_delete(
-			'spip_massicotages',
-			sql_in('id_massicotage', $id_massicotages)
-		);
-		sql_delete(
-			'spip_massicotages_liens',
-			sql_in('id_massicotage', $id_massicotages)
-		);
+		massicot_supprimer_tous('document', $flux['args']['id_objet']);
 	}
 
 	return $flux;
@@ -173,34 +147,39 @@ function massicot_post_edition($flux) {
 function massicot_formulaire_traiter($flux) {
 
 	if (($flux['args']['form'] === 'editer_logo')
-	    and (_request('supprimer_logo_on'))) {
-		include_spip('base/abstract_sql');
-		include_spip('action/editer_liens');
-
+		&& (_request('supprimer_logo_on') || _request('supprimer_logo_off'))) {
 		$objet = $flux['args']['args'][0];
 		$id_objet = $flux['args']['args'][1];
-
-		$massicotages = objet_trouver_liens(
-			array('massicotage' => '*'),
-			array($objet => $id_objet)
-		);
-
-		$id_massicotages = array();
-
-		foreach ($massicotages as $cle => $valeur) {
-			$id_massicotages[] = $valeur['id_massicotage'];
-		}
-
-		sql_delete(
-			'spip_massicotages',
-			sql_in('id_massicotage', $id_massicotages)
-		);
-		sql_delete(
-			'spip_massicotages_liens',
-			sql_in('id_massicotage', $id_massicotages)
-		);
+		$role = _request('supprimer_logo_off') ? 'logo_survol' : '';
+		massicot_supprimer($objet, $id_objet, $role);
 	}
 
+	return $flux;
+}
+
+/**
+ * Ajoute les actions de recadrage au formulaire natif des logos sans
+ * surcharger son squelette complet.
+ */
+function massicot_formulaire_fond($flux) {
+	if (($flux['args']['form'] ?? '') !== 'editer_logo') {
+		return $flux;
+	}
+
+	$contexte = $flux['args']['contexte'] ?? array();
+	$args = $flux['args']['args'] ?? array();
+	$objet = $contexte['objet'] ?? ($args[0] ?? '');
+	$id_objet = isset($contexte['id_objet'])
+		? (int) $contexte['id_objet']
+		: (isset($args[1]) ? (int) $args[1] : 0);
+	if (!$objet) {
+		return $flux;
+	}
+
+	$flux['data'] .= recuperer_fond(
+		'prive/squelettes/inclure/massicot_actions_logo',
+		array('objet' => $objet, 'id_objet' => $id_objet, 'redirect' => self())
+	);
 	return $flux;
 }
 
@@ -251,7 +230,8 @@ function massicot_editer_contenu_objet($flux) {
 function massicot_formulaire_charger($flux) {
 
 	if (($flux['args']['form'] === 'illustrer_document')
-			and isset($id_vignette) and $id_vignette) {
+			&& !empty($flux['data']['id_vignette'])
+			&& !empty($flux['data']['vignette'])) {
 		$parametres = massicot_get_parametres(
 			'document',
 			$flux['data']['id_vignette']

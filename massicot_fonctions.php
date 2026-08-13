@@ -51,6 +51,72 @@ function massicot_chemin_image($objet, $id_objet, $role = null) {
 }
 
 /**
+ * Indique si les traitements automatiques de Massicot 1.x sont actifs.
+ */
+function massicot_mode_compatibilite() {
+	include_spip('inc/config');
+	return lire_config('massicot/mode_compatibilite', 'non') === 'oui';
+}
+
+/**
+ * Normalise et valide les parametres persistants ou recus du formulaire.
+ *
+ * @return array Tableau normalise, vide si les donnees sont invalides.
+ */
+function massicot_normaliser_parametres($parametres, $largeur = null, $hauteur = null) {
+	if (!is_array($parametres)) {
+		return array();
+	}
+
+	foreach (array('zoom', 'x1', 'x2', 'y1', 'y2') as $cle) {
+		if (!isset($parametres[$cle]) || !is_numeric($parametres[$cle])) {
+			return array();
+		}
+	}
+
+	$normalises = array(
+		'zoom' => (float) $parametres['zoom'],
+		'x1' => (int) round((float) $parametres['x1']),
+		'x2' => (int) round((float) $parametres['x2']),
+		'y1' => (int) round((float) $parametres['y1']),
+		'y2' => (int) round((float) $parametres['y2']),
+	);
+
+	if ($normalises['zoom'] < 0.01 || $normalises['zoom'] > 10
+		|| $normalises['x1'] < 0 || $normalises['y1'] < 0
+		|| $normalises['x2'] <= $normalises['x1']
+		|| $normalises['y2'] <= $normalises['y1']) {
+		return array();
+	}
+
+	if ($largeur && $hauteur) {
+		$largeur_canevas = (int) ceil($largeur * $normalises['zoom']);
+		$hauteur_canevas = (int) ceil($hauteur * $normalises['zoom']);
+		if ($normalises['x2'] > $largeur_canevas || $normalises['y2'] > $hauteur_canevas) {
+			return array();
+		}
+	}
+
+	return $normalises;
+}
+
+/**
+ * Lit le format JSON 2.x et, en repli, les donnees serialisees de Massicot 1.x.
+ */
+function massicot_decoder_parametres($traitements) {
+	if (!is_string($traitements) || $traitements === '') {
+		return array();
+	}
+
+	$parametres = json_decode($traitements, true);
+	if (!is_array($parametres)) {
+		$parametres = @unserialize($traitements, array('allowed_classes' => false));
+	}
+
+	return massicot_normaliser_parametres($parametres);
+}
+
+/**
  * Enregistre un massicotage dans la base de données
  *
  * @param string $objet : le type d'objet
@@ -93,8 +159,16 @@ function massicot_enregistrer($objet, $id_objet, $parametres) {
 		$role = '';
 	}
 
-	$chemin_image = massicot_chemin_image($objet, $id_objet);
-	list($width, $height) = getimagesize($chemin_image);
+	$chemin_image = massicot_chemin_image($objet, $id_objet, $role);
+	$dimensions = $chemin_image ? @getimagesize($chemin_image) : false;
+	if (!$dimensions) {
+		return _T('massicot:erreur_fichier_image');
+	}
+	list($width, $height) = $dimensions;
+	$parametres = massicot_normaliser_parametres($parametres, $width, $height);
+	if (!$parametres) {
+		return _T('massicot:erreur_parametres_invalides');
+	}
 
 	$id_massicotage = sql_getfetsel(
 		'id_massicotage',
@@ -132,7 +206,7 @@ function massicot_enregistrer($objet, $id_objet, $parametres) {
 	if ($err = objet_modifier(
 		'massicotage',
 		$id_massicotage,
-		array('traitements' => serialize($parametres))
+		array('traitements' => json_encode($parametres, JSON_THROW_ON_ERROR))
 	)) {
 		return $err;
 	}
@@ -158,11 +232,8 @@ function massicot_supprimer($objet, $id_objet, $role='') {
 
 	$id_massicotage = massicot_get_id($objet, $id_objet, $role);
 
-	if (sql_delete(
-		'spip_massicotages',
-		'id_massicotage=' . intval($id_massicotage)
-	) === false) {
-		return "massicot_supprimer : erreur lors de la suppression";
+	if (!$id_massicotage) {
+		return null;
 	}
 
 	if (sql_delete(
@@ -172,6 +243,32 @@ function massicot_supprimer($objet, $id_objet, $role='') {
 		return "massicot_supprimer : erreur lors de la suppression";
 	}
 
+	if (sql_delete(
+		'spip_massicotages',
+		'id_massicotage=' . intval($id_massicotage)
+	) === false) {
+		return "massicot_supprimer : erreur lors de la suppression";
+	}
+
+}
+
+/**
+ * Supprime tous les recadrages associes a un objet remplace.
+ */
+function massicot_supprimer_tous($objet, $id_objet) {
+	include_spip('action/editer_liens');
+	$liens = objet_trouver_liens(
+		array('massicotage' => '*'),
+		array($objet => (int) $id_objet)
+	);
+	$ids = array_map('intval', array_column($liens, 'id_massicotage'));
+	if (!$ids) {
+		return;
+	}
+
+	$where = sql_in('id_massicotage', $ids);
+	sql_delete('spip_massicotages_liens', $where);
+	sql_delete('spip_massicotages', $where);
 }
 
 /**
@@ -229,7 +326,7 @@ function massicot_get_parametres($objet, $id_objet, $role = '') {
 	);
 
 	if ($traitements) {
-		return unserialize($traitements);
+		return massicot_decoder_parametres($traitements);
 	} else {
 		return array();
 	}
@@ -301,17 +398,23 @@ function massicoter_fichier($fichier, $parametres) {
 		}
 	}
 
-	/* ne rien faire s'il n'y a pas de massicotage défini */
-	if (! $parametres) {
+	$parametres = massicot_normaliser_parametres($parametres);
+
+	/* ne rien faire s'il n'y a pas de massicotage défini ou valide */
+	if (!$parametres) {
 		return $fichier;
 	}
 
-	list($width, $height) = getimagesize($fichier);
-	if ($parametres['zoom'] === '1'
-		&& $parametres['x1'] === '0'
-		&& $parametres['x2'] === (string)$width
-		&& $parametres['y1'] === '0'
-		&& $parametres['y2'] === (string)$height
+	$dimensions = @getimagesize($fichier);
+	if (!$dimensions) {
+		return $fichier_original;
+	}
+	list($width, $height) = $dimensions;
+	if ($parametres['zoom'] === 1.0
+		&& $parametres['x1'] === 0
+		&& $parametres['x2'] === $width
+		&& $parametres['y1'] === 0
+		&& $parametres['y2'] === $height
 		) {
 		// Ne rien faire si rien ne change
 		return $fichier;
@@ -401,7 +504,7 @@ function massicoter_document($fichier = false) {
 	);
 
 	if (!is_null($parametres)) {
-		$parametres = unserialize($parametres);
+		$parametres = massicot_decoder_parametres($parametres);
 	}
 
 	return massicoter_fichier($fichier, $parametres);

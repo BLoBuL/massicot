@@ -8,10 +8,14 @@ if (!defined('_ECRIRE_INC_VERSION')) {
 }
 
 $GLOBALS[$GLOBALS['idx_lang']] = array(
+	// C
+	'configuration_titre' => 'Massicot migration',
 
 	// E
+	'erreur_fichier_image' => 'The image file cannot be found or read.',
 	'erreur_image_trop_petite' => 'This image is too small for this preset.',
 	'erreur_parametre_manquant' => 'The parameter @parametre@ is mandatory !',
+	'erreur_parametres_invalides' => 'The crop parameters are invalid.',
 
 	// L
 	'label_annuler' => 'Cancel',
@@ -21,6 +25,10 @@ $GLOBALS[$GLOBALS['idx_lang']] = array(
 	// M
 	'massicot_titre' => 'Image cropper',
 	'massicoter' => 'Crop the image',
+	'massicoter_logo' => 'Crop logo',
+	'massicoter_logo_survol' => 'Crop rollover logo',
+	'mode_compatibilite_explication' => 'Keep this temporarily after upgrading from Massicot 1.x. Disable it after templates use the explicit massicoter_objet filter.',
+	'mode_compatibilite_label' => 'Enable deprecated automatic treatments',
 
 	// R
 	'reinitialiser' => 'Reset',
