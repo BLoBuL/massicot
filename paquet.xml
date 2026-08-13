@@ -23,7 +23,6 @@
 	<pipeline nom="declarer_tables_auxiliaires" inclure="base/massicot.php" />
 
 	<pipeline nom="autoriser"        inclure="massicot_pipelines.php" />
-	<pipeline nom="jquery_plugins"   inclure="massicot_pipelines.php" />
 	<pipeline nom="header_prive"     inclure="massicot_pipelines.php" />
 	<pipeline nom="document_desc_actions" inclure="massicot_pipelines.php" />
 	<pipeline nom="post_edition" inclure="massicot_pipelines.php" />

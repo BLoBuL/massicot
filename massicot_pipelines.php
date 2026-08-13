@@ -58,22 +58,6 @@ function autoriser_massicoter_dist($faire, $type, $id, $qui, $opt) {
 }
 
 /**
- * Insérer le plugin jquery de selection du cadre
- *
- * @pipeline jquery_plugins
- * @param  array $scripts  Les scripts qui seront insérés dans la page
- * @return array	   La liste des scripts complétée
- */
-function massicot_jquery_plugins($scripts) {
-
-	if (test_espace_prive() && _request('exec') === 'massicoter_image') {
-		$scripts[] = 'javascripts/formulaireMassicoterImage.js';
-	}
-
-	return $scripts;
-}
-
-/**
  * Ajouter une action "recadrer" sur les documents
  *
  * @pipeline editer_document_actions
@@ -135,6 +119,8 @@ function massicot_header_prive($flux) {
 		include_spip('inc/filtres');
 		$css = timestamp(find_in_path('css/massicot.css'));
 		$flux .= '<link rel="stylesheet" href="' . attribut_html($css) . '" type="text/css">';
+		$js = timestamp(find_in_path('javascripts/formulaireMassicoterImage.js'));
+		$flux .= '<script src="' . attribut_html($js) . '"></script>';
 	}
 	return $flux;
 }

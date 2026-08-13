@@ -158,6 +158,15 @@
 			form.classList.add('massicot-ready');
 		}
 
+		if (!image) {
+			form.classList.add('massicot-error');
+			var error = document.createElement('p');
+			error.className = 'erreur_message';
+			error.textContent = (options.messages && options.messages.erreur_fichier_image) || 'Image indisponible';
+			form.prepend(error);
+			return {getState: function () { return null; }, reset: function () {}};
+		}
+
 		if (image.complete) { ready(); }
 		else { image.addEventListener('load', ready, {once: true}); }
 

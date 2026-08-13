@@ -52,7 +52,8 @@
    window.massicot = window.MassicotCropper.init(document.getElementById('formulaire_massicoter_image'), {
      zoom: #ENV{zoom,1},
      messages: {
-       'erreur_image_trop_petite': "<:massicot:erreur_image_trop_petite:>"
+       'erreur_image_trop_petite': "<:massicot:erreur_image_trop_petite:>",
+       'erreur_fichier_image': "<:massicot:erreur_fichier_image:>"
      }[,
 	   forcer_dimensions: (#ENV{forcer_dimensions}|json_encode)]
    });
