@@ -86,15 +86,47 @@ function massicot_post_edition($flux) {
  */
 function massicot_formulaire_traiter($flux) {
 
-	if (($flux['args']['form'] ?? '') === 'editer_logo'
-		&& (_request('supprimer_logo_on') || _request('supprimer_logo_off'))) {
+	if (($flux['args']['form'] ?? '') === 'editer_logo') {
 		$objet = $flux['args']['args'][0] ?? '';
 		$id_objet = (int) ($flux['args']['args'][1] ?? 0);
-		$role = _request('supprimer_logo_off') ? 'logo_survol' : '';
-		massicot_supprimer($objet, $id_objet, $role);
+		$fichiers = is_array($_FILES ?? null)
+			? $_FILES
+			: ($GLOBALS['HTTP_POST_FILES'] ?? array());
+		$roles = massicot_roles_logo_modifies(
+			$fichiers,
+			(bool) _request('supprimer_logo_on'),
+			(bool) _request('supprimer_logo_off'),
+			empty($flux['data']['message_erreur'])
+		);
+		foreach ($roles as $role) {
+			massicot_supprimer($objet, $id_objet, $role);
+		}
 	}
 
 	return $flux;
+}
+
+/**
+ * Détermine quels rôles ont réellement été supprimés ou remplacés par le
+ * formulaire natif de SPIP.
+ */
+function massicot_roles_logo_modifies($fichiers, $supprimer_on, $supprimer_off, $traitement_ok = true) {
+	$roles = array();
+	if ($supprimer_on) {
+		$roles[] = '';
+	}
+	if ($supprimer_off) {
+		$roles[] = 'logo_survol';
+	}
+	if ($traitement_ok && is_array($fichiers)) {
+		if (isset($fichiers['logo_on']) && (int) ($fichiers['logo_on']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+			$roles[] = '';
+		}
+		if (isset($fichiers['logo_off']) && (int) ($fichiers['logo_off']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+			$roles[] = 'logo_survol';
+		}
+	}
+	return array_values(array_unique($roles));
 }
 
 /**

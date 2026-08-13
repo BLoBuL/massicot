@@ -28,6 +28,27 @@ foreach (array('avif', 'svg', 'pdf', 'txt') as $extension_document) {
 $extension_document = 'jpg';
 $autorisation_modifier = false;
 $tests['delegation modifier'] = !autoriser_massicoter_dist('massicoter', 'document', 1, $qui, array());
+$tests['remplacement logo normal'] = massicot_roles_logo_modifies(
+	array('logo_on' => array('error' => UPLOAD_ERR_OK)),
+	false,
+	false
+) === array('');
+$tests['remplacement logo survol'] = massicot_roles_logo_modifies(
+	array('logo_off' => array('error' => UPLOAD_ERR_OK)),
+	false,
+	false
+) === array('logo_survol');
+$tests['upload en erreur conserve recadrage'] = massicot_roles_logo_modifies(
+	array('logo_on' => array('error' => UPLOAD_ERR_PARTIAL)),
+	false,
+	false
+) === array();
+$tests['traitement en erreur conserve recadrage'] = massicot_roles_logo_modifies(
+	array('logo_on' => array('error' => UPLOAD_ERR_OK)),
+	false,
+	false,
+	false
+) === array();
 
 $echecs = array_keys(array_filter($tests, fn($ok) => !$ok));
 if ($echecs) {
