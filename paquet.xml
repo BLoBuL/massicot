@@ -32,8 +32,6 @@
 	<pipeline nom="formulaire_fond" inclure="massicot_pipelines.php" />
 	<pipeline nom="editer_contenu_objet" inclure="massicot_pipelines.php" />
 
-	<!-- <lib nom="jquery.imgareaselect.js" lien="https://github.com/odyniec/imgareaselect/archive/master.zip" /> -->
-
 	<necessite nom="php" compatibilite="[8.0.0;[" />
 	<necessite nom="medias" compatibilite="[2.7.59;[" />
 	<necessite nom="saisies" compatibilite="[3.23.2;[" />
