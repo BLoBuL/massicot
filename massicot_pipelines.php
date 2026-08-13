@@ -39,20 +39,6 @@ function autoriser_massicoter_dist($faire, $type, $id, $qui, $opt) {
 		if (!massicot_extension_recadrable($ext)) {
 			return false;
 		}
-	} else {
-		$chercher_logo = charger_fonction('chercher_logo', 'inc');
-		foreach(array('on', 'off') as $role) {
-		$logo = $chercher_logo($id, $type, $role);
-			if (is_array($logo)) {
-				$logo = array_shift($logo);
-				if (!is_null($logo)) {
-					$logo = pathinfo($logo);
-					if (!empty($logo['extension']) && !massicot_extension_recadrable($logo['extension'])) {
-						return false;
-					}
-				}
-			}
-		}
 	}
 	return autoriser('modifier', $type, $id, $qui, $opt);
 }
@@ -100,10 +86,10 @@ function massicot_post_edition($flux) {
  */
 function massicot_formulaire_traiter($flux) {
 
-	if (($flux['args']['form'] === 'editer_logo')
+	if (($flux['args']['form'] ?? '') === 'editer_logo'
 		&& (_request('supprimer_logo_on') || _request('supprimer_logo_off'))) {
-		$objet = $flux['args']['args'][0];
-		$id_objet = $flux['args']['args'][1];
+		$objet = $flux['args']['args'][0] ?? '';
+		$id_objet = (int) ($flux['args']['args'][1] ?? 0);
 		$role = _request('supprimer_logo_off') ? 'logo_survol' : '';
 		massicot_supprimer($objet, $id_objet, $role);
 	}

@@ -80,6 +80,13 @@ function formulaires_massicoter_image_saisies_dist($objet, $id_objet, $redirect,
  *	   Environnement du formulaire
  */
 function formulaires_massicoter_image_charger_dist($objet, $id_objet, $redirect, $format = null, $role = null) {
+	include_spip('inc/autoriser');
+	if (!autoriser('massicoter', $objet, $id_objet)) {
+		return array(
+			'editable' => false,
+			'message_erreur' => _T('massicot:operation_non_autorisee'),
+		);
+	}
 
 	$parametres = massicot_get_parametres($objet, $id_objet, $role);
 
@@ -105,6 +112,13 @@ function formulaires_massicoter_image_charger_dist($objet, $id_objet, $redirect,
  */
 function formulaires_massicoter_image_verifier_dist($objet, $id_objet, $redirect, $format = null, $role = null) {
 	$erreurs = array();
+	if (_request('annuler')) {
+		return $erreurs;
+	}
+	include_spip('inc/autoriser');
+	if (!autoriser('massicoter', $objet, $id_objet)) {
+		return array('message_erreur' => _T('massicot:operation_non_autorisee'));
+	}
 	$chemin = massicot_chemin_image($objet, $id_objet, $role);
 	$dimensions = $chemin ? @getimagesize($chemin) : false;
 	if (!$dimensions) {

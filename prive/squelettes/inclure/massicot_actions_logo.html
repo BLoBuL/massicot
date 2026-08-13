@@ -1,13 +1,13 @@
 [(#REM) Actions ajoutees au formulaire natif sans le surcharger. ]
 <div class="massicot-actions-logo">
 	[(#SET{logo_on,#ENV{objet}|massicot_chemin_image{#ENV{id_objet},logo}})]
-	[(#GET{logo_on}|et{#AUTORISER{massicoter,#ENV{objet},#ENV{id_objet}}}|oui)
+	[(#GET{logo_on}|massicot_fichier_recadrable|et{#AUTORISER{massicoter,#ENV{objet},#ENV{id_objet}}}|oui)
 	<a class="btn btn_secondaire" href="[(#URL_ECRIRE{massicoter_image,objet=#ENV{objet}&id_objet=#ENV{id_objet}}|parametre_url{redirect,#ENV{redirect}})]">
 		<:massicot:massicoter_logo:>
 	</a>]
 
 	[(#SET{logo_off,#ENV{objet}|massicot_chemin_image{#ENV{id_objet},logo_survol}})]
-	[(#GET{logo_off}|et{#AUTORISER{massicoter,#ENV{objet},#ENV{id_objet}}}|oui)
+	[(#GET{logo_off}|massicot_fichier_recadrable|et{#AUTORISER{massicoter,#ENV{objet},#ENV{id_objet}}}|oui)
 	<a class="btn btn_secondaire" href="[(#URL_ECRIRE{massicoter_image,objet=#ENV{objet}&id_objet=#ENV{id_objet}}|parametre_url{role,logo_survol}|parametre_url{redirect,#ENV{redirect}})]">
 		<:massicot:massicoter_logo_survol:>
 	</a>]

@@ -88,6 +88,20 @@ function massicot_extension_recadrable($extension) {
 }
 
 /**
+ * Vérifie qu'une source est une image raster réellement lisible.
+ */
+function massicot_fichier_recadrable($fichier) {
+	if (!$fichier) {
+		return false;
+	}
+	$path = parse_url($fichier, PHP_URL_PATH) ?: $fichier;
+	if (!massicot_extension_recadrable(pathinfo($path, PATHINFO_EXTENSION))) {
+		return false;
+	}
+	return (bool) @getimagesize($fichier);
+}
+
+/**
  * Indique si les traitements automatiques de Massicot 1.x sont actifs.
  */
 function massicot_mode_compatibilite() {
