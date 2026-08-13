@@ -653,6 +653,38 @@ function massicot_appliquer_recadrage_html($html, $objet, $id_objet, $role = '')
 }
 
 /**
+ * Applique le dérivé à l'aperçu natif du formulaire editer_document.
+ *
+ * Cet aperçu est lui-même une vignette SPIP et ne porte donc plus le nom du
+ * fichier source. Le conteneur stable `.editer_apercu` est utilisé comme point
+ * d'intégration ciblé, sans copie du squelette de Médias.
+ */
+function massicot_appliquer_recadrage_apercu_document($html, $id_document) {
+	$source = massicot_chemin_image('document', $id_document);
+	$parametres = massicot_get_parametres('document', $id_document);
+	$derive = ($source && $parametres) ? massicoter_fichier($source, $parametres) : '';
+	if (!$derive || $derive === $source) {
+		return $html;
+	}
+
+	include_spip('inc/filtres');
+	$dimensions = @getimagesize(parse_url($derive, PHP_URL_PATH) ?: $derive);
+	return preg_replace_callback(
+		'#(<div\\b[^>]*class=(["\'])[^"\']*\\bediter_apercu\\b[^"\']*\\2[^>]*>.*?)(<img\\b[^>]*>)(.*?</div>)#is',
+		function ($match) use ($derive, $dimensions) {
+			$balise = inserer_attribut($match[3], 'src', $derive);
+			if ($dimensions) {
+				$balise = inserer_attribut($balise, 'width', $dimensions[0]);
+				$balise = inserer_attribut($balise, 'height', $dimensions[1]);
+			}
+			return $match[1] . $balise . $match[4];
+		},
+		$html,
+		1
+	);
+}
+
+/**
  * Massicoter un logo document
  *
  * Traitement automatique sur les balises #LOGO_DOCUMENT

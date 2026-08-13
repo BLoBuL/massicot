@@ -165,6 +165,7 @@ function massicot_formulaire_fond($flux) {
 			'document',
 			$id_document
 		);
+		$flux['data'] = massicot_appliquer_recadrage_apercu_document($flux['data'], $id_document);
 		return $flux;
 	}
 
