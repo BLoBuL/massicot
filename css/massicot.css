@@ -63,9 +63,14 @@
 
 .massicot-rotation { margin: 0; padding: .75rem; border: 1px solid var(--spip-color-gray-light, #d8d8d8); border-radius: .45rem; }
 .massicot-rotation legend { padding: 0 .3rem; font-weight: 700; }
-.massicot-rotation-controles { display: grid; grid-template-columns: 3rem 1fr 3rem; align-items: center; gap: .5rem; }
+.massicot-rotation-controles { display: grid; grid-template-columns: repeat(2, minmax(2.8rem, auto)) 1fr repeat(2, minmax(2.8rem, auto)); align-items: center; gap: .4rem; }
 .massicot-tourner { min-height: 2.7rem; padding: .25rem; font-size: 1.4rem; line-height: 1; }
+.massicot-rotation-directe { min-height: 2.7rem; padding: .25rem .5rem; }
+.massicot-rotation-directe.on { border-color: var(--spip-color-theme, #3858a6); box-shadow: 0 0 0 2px color-mix(in srgb, var(--spip-color-theme, #3858a6) 28%, transparent); }
 .massicot-rotation-valeur { font-size: 1.1rem; font-variant-numeric: tabular-nums; font-weight: 700; text-align: center; }
+.massicot-apercu-sortie { display: grid; gap: .35rem; margin-top: .65rem; }
+.massicot-apercu-sortie-label { font-size: .9em; font-weight: 600; }
+.massicot-apercu-sortie-canvas { display: block; width: 100%; height: 8rem; border-radius: .35rem; background-color: #30343b; background-image: linear-gradient(45deg, #3a3f47 25%, transparent 25%), linear-gradient(-45deg, #3a3f47 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #3a3f47 75%), linear-gradient(-45deg, transparent 75%, #3a3f47 75%); background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0; }
 .massicot-rotation .explication { margin: .55rem 0 0; color: var(--spip-color-gray-dark, #555); font-size: .9em; }
 
 .massicot-exif { padding: .7rem .8rem; border-radius: .45rem; background: var(--spip-color-theme-lightest, #f6f6f6); }

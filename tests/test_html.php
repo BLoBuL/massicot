@@ -18,6 +18,8 @@ require dirname(__DIR__) . '/massicot_fonctions.php';
 
 $html = '<picture><source srcset="original.webp 2x"><img src="original.jpg" alt="Portrait" loading="lazy" data-test="oui" class="logo"></picture>';
 $resultat = massicot_remplacer_premiere_image_html($html, 'cache/derive.jpg', array(60, 50));
+$interface = file_get_contents(dirname(__DIR__) . '/formulaires/massicoter_image.html');
+$javascript = file_get_contents(dirname(__DIR__) . '/javascripts/formulaireMassicoterImage.js');
 $tests = array(
 	'source remplacee' => str_contains($resultat, 'src="cache/derive.jpg"'),
 	'dimensions actualisees' => str_contains($resultat, 'width="60"') && str_contains($resultat, 'height="50"'),
@@ -32,6 +34,12 @@ $tests = array(
 	'pipeline ignore PNG' => massicot_normaliser_images_html_spip4(
 		'<img src="IMG/png/photo.png" alt="Test">'
 	) === '<img src="IMG/png/photo.png" alt="Test">',
+	'interface rotations SPIP' => str_contains($interface, 'data-angle="-90"')
+		&& str_contains($interface, 'data-rotation="180"')
+		&& str_contains($interface, 'data-angle="90"'),
+	'apercu rotation final' => str_contains($interface, 'massicot-apercu-sortie-canvas')
+		&& str_contains($javascript, 'drawOutputPreview')
+		&& str_contains($javascript, 'outputPreviewContext.rotate'),
 );
 
 $echecs = array_keys(array_filter($tests, fn($ok) => !$ok));

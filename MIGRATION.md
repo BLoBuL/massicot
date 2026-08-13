@@ -12,6 +12,7 @@ balises natives sur une installation neuve.
 | 2.1.0 | paramètre `filtre`, défaut `aucun` | non |
 | 2.1.1 | paramètre `rotation`, défaut `0` | non |
 | 2.1.2 | pipeline HTML d’orientation EXIF | non |
+| 2.2.0 | interface et aperçu des rotations SPIP 4 | non |
 
 ## Mise à jour d’un site existant
 

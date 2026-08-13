@@ -33,8 +33,14 @@
 	  <legend><:massicot:rotation_titre:></legend>
 	  <div class="massicot-rotation-controles">
 	    <button type="button" class="btn btn_secondaire massicot-tourner" data-angle="-90" aria-label="<:massicot:rotation_gauche:>">↶</button>
+	    <button type="button" class="btn btn_secondaire massicot-rotation-directe" data-rotation="0" aria-label="<:massicot:rotation_aucune:>">0°</button>
+	    <button type="button" class="btn btn_secondaire massicot-rotation-directe" data-rotation="180" aria-label="<:massicot:rotation_demi_tour:>">180°</button>
 	    <output class="massicot-rotation-valeur">#ENV{rotation,0}°</output>
 	    <button type="button" class="btn btn_secondaire massicot-tourner" data-angle="90" aria-label="<:massicot:rotation_droite:>">↷</button>
+	  </div>
+	  <div class="massicot-apercu-sortie">
+	    <span class="massicot-apercu-sortie-label"><:massicot:rotation_apercu:></span>
+	    <canvas class="massicot-apercu-sortie-canvas" width="240" height="160" aria-label="<:massicot:rotation_apercu:>"></canvas>
 	  </div>
 	  <p class="explication"><:massicot:rotation_explication:></p>
 	</fieldset>

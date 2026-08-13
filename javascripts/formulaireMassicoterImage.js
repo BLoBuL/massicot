@@ -27,13 +27,52 @@
 			fields[name] = form.querySelector('[name="' + name + '"]');
 		});
 		var rotationButtons = form.querySelectorAll('.massicot-tourner');
+		var rotationDirectButtons = form.querySelectorAll('.massicot-rotation-directe');
 		var rotationValue = form.querySelector('.massicot-rotation-valeur');
+		var outputPreview = form.querySelector('.massicot-apercu-sortie-canvas');
+		var outputPreviewContext = outputPreview ? outputPreview.getContext('2d') : null;
 		var forced = options.forcer_dimensions || null;
 		var ratio = forced ? nombre(forced.largeur, 1) / nombre(forced.hauteur, 1) : null;
 		var sourceWidth = 0;
 		var sourceHeight = 0;
 		var state;
 		var interaction;
+		var previewFrame;
+
+		function cssFilterValue(filter) {
+			return {
+				aucun: 'none', nb: 'grayscale(1)', sepia: 'sepia(1)',
+				lumineux: 'brightness(1.18)', sombre: 'brightness(.82)',
+				net: 'contrast(1.12) saturate(1.08)', flou: 'blur(2px)'
+			}[filter || 'aucun'] || 'none';
+		}
+
+		function scheduleOutputPreview() {
+			if (!outputPreviewContext || !state || !image.complete) { return; }
+			window.cancelAnimationFrame(previewFrame);
+			previewFrame = window.requestAnimationFrame(drawOutputPreview);
+		}
+
+		function drawOutputPreview() {
+			var cropWidth = Math.max(1, (state.x2 - state.x1) / state.zoom);
+			var cropHeight = Math.max(1, (state.y2 - state.y1) / state.zoom);
+			var sourceX = state.x1 / state.zoom;
+			var sourceY = state.y1 / state.zoom;
+			var rotation = nombre(fields.rotation.value, 0);
+			var quarterTurn = rotation === 90 || rotation === 270;
+			var rotatedWidth = quarterTurn ? cropHeight : cropWidth;
+			var rotatedHeight = quarterTurn ? cropWidth : cropHeight;
+			var scale = Math.min(outputPreview.width / rotatedWidth, outputPreview.height / rotatedHeight);
+			var drawWidth = cropWidth * scale;
+			var drawHeight = cropHeight * scale;
+			outputPreviewContext.save();
+			outputPreviewContext.clearRect(0, 0, outputPreview.width, outputPreview.height);
+			outputPreviewContext.translate(outputPreview.width / 2, outputPreview.height / 2);
+			outputPreviewContext.rotate(rotation * Math.PI / 180);
+			outputPreviewContext.filter = cssFilterValue(fields.filtre.value);
+			outputPreviewContext.drawImage(image, sourceX, sourceY, cropWidth, cropHeight, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+			outputPreviewContext.restore();
+		}
 
 		function readState() {
 			return {
@@ -69,26 +108,19 @@
 			selection.style.top = state.y1 + 'px';
 			selection.style.width = (state.x2 - state.x1) + 'px';
 			selection.style.height = (state.y2 - state.y1) + 'px';
+			scheduleOutputPreview();
 		}
 
 		function applyFilter(filter) {
 			filter = filter || 'aucun';
 			fields.filtre.value = filter;
-			var css = {
-				aucun: 'none',
-				nb: 'grayscale(1)',
-				sepia: 'sepia(1)',
-				lumineux: 'brightness(1.18)',
-				sombre: 'brightness(.82)',
-				net: 'contrast(1.12) saturate(1.08)',
-				flou: 'blur(2px)'
-			};
-			image.style.filter = css[filter] || 'none';
+			image.style.filter = cssFilterValue(filter);
 			filterButtons.forEach(function (button) {
 				var selected = button.dataset.filtre === filter;
 				button.classList.toggle('on', selected);
 				button.setAttribute('aria-pressed', selected ? 'true' : 'false');
 			});
+			scheduleOutputPreview();
 		}
 
 		function applyRotation(rotation) {
@@ -96,6 +128,12 @@
 			if (![0, 90, 180, 270].includes(rotation)) { rotation = 0; }
 			fields.rotation.value = rotation;
 			rotationValue.value = rotation + '°';
+			rotationDirectButtons.forEach(function (button) {
+				var selected = nombre(button.dataset.rotation, 0) === rotation;
+				button.classList.toggle('on', selected);
+				button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+			});
+			scheduleOutputPreview();
 		}
 
 		function resizeFrom(handle, start, dx, dy) {
@@ -194,6 +232,9 @@
 				button.addEventListener('click', function () {
 					applyRotation(nombre(fields.rotation.value, 0) + nombre(button.dataset.angle, 0));
 				});
+			});
+			rotationDirectButtons.forEach(function (button) {
+				button.addEventListener('click', function () { applyRotation(button.dataset.rotation); });
 			});
 			applyFilter(fields.filtre.value || 'aucun');
 			applyRotation(fields.rotation.value || 0);

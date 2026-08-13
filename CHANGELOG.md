@@ -1,5 +1,20 @@
 # Journal des changements
 
+## [2.2.0] - 2026-08-13
+
+### Ajouté
+
+- accès direct dans le recadreur aux rotations SPIP 4 à 0°, 90°, 180° et 270° ;
+- aperçu du rendu final combinant recadrage, filtre et rotation ;
+- état visuel et accessible de la rotation sélectionnée.
+
+### Corrigé
+
+- les rotations de l’interface passent par `image_rotation()`, puis par le
+  contrôle de dimensions et le repli GD de Massicot si SPIP 4 échoue ;
+- l’aperçu ne transforme pas les coordonnées de sélection : la rotation reste
+  appliquée après le recadrage, comme côté serveur.
+
 ## [2.1.2] - 2026-08-13
 
 ### Corrigé

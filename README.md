@@ -32,7 +32,8 @@ Depuis un logo, un document image ou une vignette, choisir **Recadrer** :
 1. régler le zoom ;
 2. déplacer ou redimensionner la sélection avec la souris, le tactile ou les flèches (`Maj` augmente le pas) ;
 3. sélectionner éventuellement un filtre ;
-4. choisir une rotation de sortie ;
+4. choisir une rotation de sortie avec les commandes 0°, 90°, 180° ou 270° et
+   contrôler le résultat dans l’aperçu final ;
 5. valider avec **Recadrer l’image**.
 
 **Réinitialiser** restaure l’image entière, le rendu original et une rotation nulle. **Supprimer le recadrage** efface uniquement la règle Massicot. Le fichier source n’est jamais remplacé.
@@ -51,6 +52,12 @@ Massicot distingue deux opérations :
 La correction privilégie `image_oriente_selon_exif()` lorsqu’elle existe, comme dans SPIP 5 et les versions récentes de Filtres Images. Sous SPIP 4, Massicot vérifie le dérivé et utilise un repli GD mis en cache si le résultat est absent ou de dimensions incohérentes.
 
 Le pipeline `post_propre` applique cette normalisation aux JPEG locaux produits par les modèles SPIP (`<docXX>`, `<imgXX>` et portfolios). Il conserve les attributs HTML et `srcset`, sans modifier les originaux.
+
+Les commandes de l’interface appellent `image_rotation()` de SPIP 4. Massicot
+vérifie ensuite les dimensions attendues pour chaque quart de tour et déclenche
+son repli GD uniquement si le résultat natif est incorrect. L’aperçu combine la
+sélection, le filtre et la rotation sans modifier la zone de travail : les
+coordonnées restent celles de l’image orientée avant rotation de sortie.
 
 ## Utilisation dans les squelettes
 
