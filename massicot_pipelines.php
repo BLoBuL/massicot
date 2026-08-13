@@ -29,13 +29,14 @@ function massicot_autoriser() { }
  * @return bool          true s'il a le droit, false sinon
  */
 function autoriser_massicoter_dist($faire, $type, $id, $qui, $opt) {
+	include_spip('massicot_fonctions');
 	if ($type === 'document') {
 		$ext = sql_getfetsel(
 			'extension',
 			'spip_documents',
 			'id_document='.intval($id)
 		);
-		if ($ext === 'svg') {
+		if (!massicot_extension_recadrable($ext)) {
 			return false;
 		}
 	} else {
@@ -46,7 +47,7 @@ function autoriser_massicoter_dist($faire, $type, $id, $qui, $opt) {
 				$logo = array_shift($logo);
 				if (!is_null($logo)) {
 					$logo = pathinfo($logo);
-					if (!empty($logo['extension']) && ($logo['extension'] === 'svg')) {
+					if (!empty($logo['extension']) && !massicot_extension_recadrable($logo['extension'])) {
 						return false;
 					}
 				}

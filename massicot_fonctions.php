@@ -78,6 +78,16 @@ function massicot_localiser_image($fichier) {
 }
 
 /**
+ * Formats raster que les filtres images de SPIP 4 peuvent recadrer.
+ * La disponibilité effective du moteur est ensuite vérifiée par getimagesize.
+ */
+function massicot_extension_recadrable($extension) {
+	return in_array(strtolower((string) $extension), array(
+		'jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'
+	), true);
+}
+
+/**
  * Indique si les traitements automatiques de Massicot 1.x sont actifs.
  */
 function massicot_mode_compatibilite() {
@@ -614,16 +624,29 @@ function massicot_appliquer_recadrage_html($html, $objet, $id_objet, $role = '')
 	}
 
 	include_spip('inc/filtres');
-	$source_path = parse_url($source, PHP_URL_PATH) ?: $source;
+	$sources = array(parse_url($source, PHP_URL_PATH) ?: $source);
+	if (objet_type($objet) === 'document') {
+		$original = sql_getfetsel('fichier', 'spip_documents', 'id_document=' . (int) $id_objet);
+		if ($original) {
+			$sources[] = parse_url($original, PHP_URL_PATH) ?: $original;
+		}
+	}
+	$noms_sources = array_unique(array_map('basename', $sources));
+	$dimensions = @getimagesize(parse_url($derive, PHP_URL_PATH) ?: $derive);
 	return preg_replace_callback(
 		'#<img\\b[^>]*>#i',
-		function ($match) use ($source_path, $derive) {
+		function ($match) use ($noms_sources, $derive, $dimensions) {
 			$src = extraire_attribut($match[0], 'src');
 			$src_path = $src ? (parse_url($src, PHP_URL_PATH) ?: $src) : '';
-			if (!$src_path || basename($src_path) !== basename($source_path)) {
+			if (!$src_path || !in_array(basename($src_path), $noms_sources, true)) {
 				return $match[0];
 			}
-			return inserer_attribut($match[0], 'src', $derive);
+			$balise = inserer_attribut($match[0], 'src', $derive);
+			if ($dimensions) {
+				$balise = inserer_attribut($balise, 'width', $dimensions[0]);
+				$balise = inserer_attribut($balise, 'height', $dimensions[1]);
+			}
+			return $balise;
 		},
 		$html
 	);
