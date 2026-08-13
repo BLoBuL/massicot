@@ -31,8 +31,8 @@ function massicot_chemin_image($objet, $id_objet, $role = null) {
 			'spip_documents',
 			'id_document='.intval($id_objet)
 		);
-		return $fichier ?
-			find_in_path(_NOM_PERMANENTS_ACCESSIBLES . $fichier) : '';
+		$chemin = $fichier ? find_in_path(_NOM_PERMANENTS_ACCESSIBLES . $fichier) : '';
+		return massicot_localiser_image($chemin);
 	} else {
 		if ($role === 'logo_survol') {
 			$type_logo = 'off';
@@ -45,9 +45,26 @@ function massicot_chemin_image($objet, $id_objet, $role = null) {
 		$chercher_logo = charger_fonction('chercher_logo', 'inc');
 		$logo = $chercher_logo($id_objet, id_table_objet($objet), $type_logo);
 		if (is_array($logo)) {
-			return array_shift($logo);
+			return massicot_localiser_image(array_shift($logo));
 		}
 	}
+}
+
+/**
+ * Copie localement une image distante avec l'API native de SPIP.
+ *
+ * Les hébergeurs d'images refusent fréquemment l'affichage à chaud. Le
+ * traitement et l'aperçu doivent donc travailler sur la copie locale gérée
+ * par SPIP, sans modifier la source éditoriale du document ou du logo.
+ */
+function massicot_localiser_image($fichier) {
+	if (!$fichier || !preg_match('#^https?://#i', $fichier)) {
+		return $fichier;
+	}
+
+	include_spip('inc/distant');
+	$copie = copie_locale($fichier);
+	return $copie ? _DIR_RACINE . $copie : '';
 }
 
 /**
