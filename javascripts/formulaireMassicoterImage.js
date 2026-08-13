@@ -62,6 +62,11 @@
 			var quarterTurn = rotation === 90 || rotation === 270;
 			var rotatedWidth = quarterTurn ? cropHeight : cropWidth;
 			var rotatedHeight = quarterTurn ? cropWidth : cropHeight;
+			var previewMaxWidth = 320;
+			var previewMaxHeight = 192;
+			var previewScale = Math.min(previewMaxWidth / rotatedWidth, previewMaxHeight / rotatedHeight, 1);
+			outputPreview.width = Math.max(1, Math.round(rotatedWidth * previewScale));
+			outputPreview.height = Math.max(1, Math.round(rotatedHeight * previewScale));
 			var scale = Math.min(outputPreview.width / rotatedWidth, outputPreview.height / rotatedHeight);
 			var drawWidth = cropWidth * scale;
 			var drawHeight = cropHeight * scale;

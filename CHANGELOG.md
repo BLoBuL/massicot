@@ -10,6 +10,8 @@
 
 ### Corrigé
 
+- proportion de l’aperçu final désormais calculée depuis le recadrage réel et
+  inversée automatiquement pour les rotations à 90° et 270° ;
 - les rotations de l’interface passent par `image_rotation()`, puis par le
   contrôle de dimensions et le repli GD de Massicot si SPIP 4 échoue ;
 - l’aperçu ne transforme pas les coordonnées de sélection : la rotation reste

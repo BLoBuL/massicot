@@ -40,6 +40,9 @@ $tests = array(
 	'apercu rotation final' => str_contains($interface, 'massicot-apercu-sortie-canvas')
 		&& str_contains($javascript, 'drawOutputPreview')
 		&& str_contains($javascript, 'outputPreviewContext.rotate'),
+	'apercu proportions dynamiques' => str_contains($javascript, 'outputPreview.width =')
+		&& str_contains($javascript, 'outputPreview.height =')
+		&& str_contains($javascript, 'quarterTurn ? cropHeight : cropWidth'),
 );
 
 $echecs = array_keys(array_filter($tests, fn($ok) => !$ok));

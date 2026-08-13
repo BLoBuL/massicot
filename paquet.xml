@@ -1,7 +1,7 @@
 <paquet
 	prefix="massicot"
 	categorie="multimedia"
-	version="2.2.0"
+	version="2.2.1"
 	etat="test"
 	compatibilite="[4.0.0;4.*]"
 	logo="prive/themes/spip/images/massicot-48.png"
