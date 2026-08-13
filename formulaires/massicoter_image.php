@@ -26,6 +26,12 @@ function formulaires_massicoter_image_saisies_dist($objet, $id_objet, $redirect,
 		array(
 			'saisie' => 'hidden',
 			'options' => array(
+				'nom' => 'filtre',
+			),
+		),
+		array(
+			'saisie' => 'hidden',
+			'options' => array(
 				'nom' => 'x1',
 			),
 		),
@@ -105,6 +111,11 @@ function formulaires_massicoter_image_charger_dist($objet, $id_objet, $redirect,
 	$parametres['id_objet'] = $id_objet;
 	$parametres['role']     = $role;
 	$parametres['_recadrage_existant'] = $recadrage_existant;
+	$parametres['_filtres'] = array_combine(
+		massicot_filtres_disponibles(),
+		array_map(fn($filtre) => _T('massicot:filtre_' . $filtre), massicot_filtres_disponibles())
+	);
+	$parametres['_exif'] = massicot_lire_exif(massicot_chemin_image($objet, $id_objet, $role));
 
 	return $parametres;
 }
@@ -134,6 +145,7 @@ function formulaires_massicoter_image_verifier_dist($objet, $id_objet, $redirect
 		'x2' => _request('x2'),
 		'y1' => _request('y1'),
 		'y2' => _request('y2'),
+		'filtre' => _request('filtre'),
 	);
 	if (!massicot_normaliser_parametres($parametres, $dimensions[0], $dimensions[1])) {
 		$erreurs['message_erreur'] = _T('massicot:erreur_parametres_invalides');
@@ -163,6 +175,7 @@ function formulaires_massicoter_image_traiter_dist($objet, $id_objet, $redirect,
 			'x2'   => _request('x2'),
 			'y1'   => _request('y1'),
 			'y2'   => _request('y2'),
+			'filtre' => _request('filtre'),
 			'role' => $role,
 		);
 

@@ -50,3 +50,6 @@ Pour un logo d’article :
 
 Le filtre retourne le fichier dérivé. Les balises natives `#FICHIER` et
 `#URL_DOCUMENT` restent inchangées lorsque le mode de compatibilité est coupé.
+
+Les données historiques sans clé `filtre` restent valides et utilisent le
+rendu `aucun`. La version 2.1.0 ne demande donc aucune migration de table.

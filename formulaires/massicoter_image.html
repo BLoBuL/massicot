@@ -1,3 +1,5 @@
+<div class="massicot-workspace">
+<aside class="massicot-tools">
 <form method="post" id="formulaire_massicoter_image" action="#ENV{action}" enctype="multipart/form-data">
   <div>
     [(#REM) declarer les hidden qui declencheront le service du
@@ -14,6 +16,28 @@
       <span class="label_dimensions"><:massicot:label_dimensions:></span>
       <span class="dimensions"></span>
 	</div>
+
+	<fieldset class="massicot-filtres">
+	  <legend><:massicot:filtres_titre:></legend>
+	  <div class="massicot-filtres-grid">
+	  <BOUCLE_filtres(DATA){source table, #ENV{_filtres}}>
+	    <button type="button" class="massicot-filtre[ (#ENV{filtre,aucun}|=={#CLE}|oui)on]" data-filtre="#CLE" aria-pressed="[(#ENV{filtre,aucun}|=={#CLE}|?{true,false})]">
+	      <span class="massicot-filtre-apercu massicot-filtre-apercu--#CLE" aria-hidden="true"></span>
+	      #VALEUR
+	    </button>
+	  </BOUCLE_filtres>
+	  </div>
+	</fieldset>
+
+	[(#ENV{_exif}|oui)
+	<details class="massicot-exif">
+	  <summary><:massicot:exif_titre:></summary>
+	  <dl>
+	  <BOUCLE_exif(DATA){source table, #ENV{_exif}}>
+	    <div><dt>[(#CLE|massicot_label_exif)]</dt><dd>#VALEUR</dd></div>
+	  </BOUCLE_exif>
+	  </dl>
+	</details>]
 
     <div class="massicot-champs">
       #GENERER_SAISIES{#ENV{_saisies}}
@@ -34,6 +58,7 @@
 
   </div>
 </form>
+</aside>
 
 
 <div class="image-massicot" tabindex="0" aria-label="<:massicot:zone_recadrage:>">
@@ -46,6 +71,7 @@
       <span class="massicot-poignee massicot-poignee-se" data-handle="se" tabindex="0"></span>
     </div>
   </div>
+</div>
 </div>
 
 

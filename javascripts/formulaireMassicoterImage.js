@@ -21,8 +21,9 @@
 		var zoomValue = form.querySelector('.massicot-zoom-value');
 		var dimensions = form.querySelector('.dimensions');
 		var reset = form.querySelector('.bouton_reset');
+		var filterButtons = form.querySelectorAll('.massicot-filtre');
 		var fields = {};
-		['x1', 'x2', 'y1', 'y2', 'zoom'].forEach(function (name) {
+		['x1', 'x2', 'y1', 'y2', 'zoom', 'filtre'].forEach(function (name) {
 			fields[name] = form.querySelector('[name="' + name + '"]');
 		});
 		var forced = options.forcer_dimensions || null;
@@ -54,7 +55,7 @@
 
 		function writeState(next) {
 			state = normalize(next);
-			Object.keys(fields).forEach(function (name) {
+			['x1', 'x2', 'y1', 'y2', 'zoom'].forEach(function (name) {
 				fields[name].value = state[name];
 			});
 			zoom.value = state.zoom;
@@ -66,6 +67,26 @@
 			selection.style.top = state.y1 + 'px';
 			selection.style.width = (state.x2 - state.x1) + 'px';
 			selection.style.height = (state.y2 - state.y1) + 'px';
+		}
+
+		function applyFilter(filter) {
+			filter = filter || 'aucun';
+			fields.filtre.value = filter;
+			var css = {
+				aucun: 'none',
+				nb: 'grayscale(1)',
+				sepia: 'sepia(1)',
+				lumineux: 'brightness(1.18)',
+				sombre: 'brightness(.82)',
+				net: 'contrast(1.12) saturate(1.08)',
+				flou: 'blur(2px)'
+			};
+			image.style.filter = css[filter] || 'none';
+			filterButtons.forEach(function (button) {
+				var selected = button.dataset.filtre === filter;
+				button.classList.toggle('on', selected);
+				button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+			});
 		}
 
 		function resizeFrom(handle, start, dx, dy) {
@@ -139,6 +160,7 @@
 
 		function resetAll() {
 			writeState({x1: 0, y1: 0, x2: sourceWidth, y2: sourceHeight, zoom: 1});
+			applyFilter('aucun');
 		}
 
 		function ready() {
@@ -155,6 +177,10 @@
 			selection.addEventListener('keydown', keyboard);
 			zoom.addEventListener('input', zoomChanged);
 			reset.addEventListener('click', resetAll);
+			filterButtons.forEach(function (button) {
+				button.addEventListener('click', function () { applyFilter(button.dataset.filtre); });
+			});
+			applyFilter(fields.filtre.value || 'aucun');
 			form.classList.add('massicot-ready');
 		}
 

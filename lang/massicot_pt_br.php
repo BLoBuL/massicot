@@ -9,6 +9,24 @@ if (!defined('_ECRIRE_INC_VERSION')) {
 
 $GLOBALS[$GLOBALS['idx_lang']] = array(
 	'supprimer_recadrage' => 'Remover recorte',
+	'filtres_titre' => 'Aparência da imagem',
+	'filtre_aucun' => 'Original',
+	'filtre_nb' => 'Preto e branco',
+	'filtre_sepia' => 'Sépia',
+	'filtre_lumineux' => 'Mais clara',
+	'filtre_sombre' => 'Mais escura',
+	'filtre_net' => 'Mais nítida',
+	'filtre_flou' => 'Desfoque suave',
+	'exif_titre' => 'Informações da imagem (EXIF)',
+	'exif_dimensions' => 'Dimensões',
+	'exif_mime' => 'Formato',
+	'exif_appareil' => 'Câmera',
+	'exif_objectif' => 'Lente',
+	'exif_prise_de_vue' => 'Capturada em',
+	'exif_exposition' => 'Exposição',
+	'exif_ouverture' => 'Abertura',
+	'exif_iso' => 'Sensibilidade',
+	'exif_focale' => 'Distância focal',
 
 	// E
 	'erreur_image_trop_petite' => 'Esta imagem é muito pequena para este formato.',

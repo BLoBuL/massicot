@@ -28,6 +28,15 @@ Les actions sont injectées par les pipelines de SPIP dans :
 Le recadreur est responsive, tactile et utilisable au clavier. Les flèches
 déplacent la sélection ou une poignée ; `Maj` augmente le pas.
 
+La colonne d’outils propose des rendus calculés par les filtres natifs de
+SPIP 4 : noir et blanc, sépia, luminosité, assombrissement, renforcement et
+flou doux. Leur aperçu est immédiat, mais le dérivé final reste produit côté
+serveur par SPIP.
+
+Un panneau EXIF en lecture seule affiche les dimensions, le format et, quand
+ils existent, l’appareil, l’objectif et les réglages photographiques. Les
+coordonnées GPS et les champs libres ne sont jamais exposés.
+
 ## Squelettes
 
 L’API explicite recommandée est :
@@ -47,4 +56,6 @@ php tests/test_parametres.php
 php tests/test_migration.php
 php tests/test_cache.php
 php tests/test_autorisations.php
+php tests/test_html.php
+SPIP_ROOT=/chemin/vers/spip php tests/test_spip_runtime.php
 ```
