@@ -1,71 +1,83 @@
-.massicoter_image #page .largeur {
-	/* pour compat 4.2 avec fonctionnement 3.2 */
-	width: 780px;
-}
-.massicoter_image #pied .largeur {
-	/* pour compat 4.2 avec fonctionnement 3.2 */
-	width: 100%;
-}
-
-.image-massicot {
-  height: auto;
-	overflow: auto;
-  text-align: center;
-}
-
-.image-massicot img {
-  display: block;
-  height: auto;
-  margin: auto;
-}
-
-.massicoter_image .boutons {
-  position: relative;
-  top: -17px;
-  margin-bottom: 0;
-  text-align: right;
-}
+.massicoter_image #page .largeur { max-width: 1100px; }
 
 #formulaire_massicoter_image {
-  position: relative;
+	display: grid;
+	gap: 1rem;
+	margin-bottom: 1rem;
 }
 
-.massicoter_image .zoom_wrap {
-  padding: 1px 14px 7px 11px;
-  border: 1px solid #ccc;
-  background-color: #eee;
+.zoom_wrap {
+	display: grid;
+	grid-template-columns: max-content minmax(10rem, 1fr) 4rem;
+	align-items: center;
+	gap: .75rem;
+	padding: .85rem 1rem;
+	border: 1px solid var(--spip-color-gray-light, #d8d8d8);
+	border-radius: .5rem;
+	background: var(--spip-color-theme-lightest, #f6f6f6);
 }
 
-.zoom_wrap .ui-state-default {
-  background-color: #b3b3b3;
-  background-image: none;
-  border-color: #a2a2a2;
+.massicot-zoom { width: 100%; accent-color: var(--spip-color-theme, #3858a6); }
+.massicot-zoom-value { font-variant-numeric: tabular-nums; text-align: right; }
+
+.wrap_dimensions {
+	display: flex;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: .65rem 1rem;
+	border-left: .25rem solid var(--spip-color-theme, #3858a6);
+	background: var(--spip-color-theme-lightest, #f6f6f6);
 }
 
-.massicoter_image .wrap_dimensions {
-  position: absolute;
-  top: -10px;
-  left: 256px;
-  background-color: white;
-  padding: 1px 6px;
-  border: solid 1px #ccc;
+.dimensions { font-weight: 700; font-variant-numeric: tabular-nums; }
+.massicot-champs:empty { display: none; }
+.massicot-champs > ul { margin: 0; }
+.massicot-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
+
+.image-massicot {
+	max-width: 100%;
+	max-height: min(70vh, 900px);
+	overflow: auto;
+	padding: 1rem;
+	border: 1px solid var(--spip-color-gray-light, #d8d8d8);
+	border-radius: .5rem;
+	background-color: #30343b;
+	background-image: linear-gradient(45deg, #3a3f47 25%, transparent 25%), linear-gradient(-45deg, #3a3f47 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #3a3f47 75%), linear-gradient(-45deg, transparent 75%, #3a3f47 75%);
+	background-size: 20px 20px;
+	background-position: 0 0, 0 10px, 10px -10px, -10px 0;
 }
 
-.massicoter_image .dimensions {
-  font-weight: bold;
+.massicot-canevas { position: relative; margin: auto; touch-action: none; }
+.massicot-canevas > img { display: block; width: 100%; height: 100%; max-width: none; user-select: none; }
+
+.massicot-selection {
+	position: absolute;
+	box-sizing: border-box;
+	cursor: move;
+	border: 2px solid #fff;
+	outline: 2px solid #1769ff;
+	box-shadow: 0 0 0 9999px rgb(0 0 0 / .55);
+	touch-action: none;
 }
 
-#formulaire_massicoter_image ul {
-  position: relative;
-  top: 6px;
-  display: inline-block;
-  z-index: 100;
-  height: 25px;
+.massicot-selection:focus-visible { outline: 4px solid #ffcc00; }
+.massicot-poignee { position: absolute; width: 1rem; height: 1rem; border: 2px solid #fff; border-radius: 50%; background: #1769ff; }
+.massicot-poignee:focus-visible { outline: 3px solid #ffcc00; }
+.massicot-poignee-no { top: -.6rem; left: -.6rem; cursor: nwse-resize; }
+.massicot-poignee-ne { top: -.6rem; right: -.6rem; cursor: nesw-resize; }
+.massicot-poignee-so { bottom: -.6rem; left: -.6rem; cursor: nesw-resize; }
+.massicot-poignee-se { right: -.6rem; bottom: -.6rem; cursor: nwse-resize; }
+
+#formulaire_massicoter_image .erreur_message { padding: .75rem 1rem; border: 1px solid #c33; background: #fff0f0; color: #900; }
+
+@media (max-width: 640px) {
+	.zoom_wrap { grid-template-columns: 1fr 4rem; }
+	.zoom_wrap label { grid-column: 1 / -1; }
+	.wrap_dimensions { flex-direction: column; gap: .25rem; }
+	.massicot-actions > * { flex: 1 1 auto; }
+	.image-massicot { padding: .5rem; max-height: 65vh; }
 }
 
-#formulaire_massicoter_image .erreur_message {
-  background-color: #FBE3E4;
-  color: red;
-  padding: 5px 10px;
-  border: 1px solid #F9CDCD;
+@media (prefers-reduced-motion: reduce) {
+	.massicot-selection, .massicot-poignee { scroll-behavior: auto; }
 }

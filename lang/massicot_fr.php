@@ -25,6 +25,8 @@ $GLOBALS[$GLOBALS['idx_lang']] = array(
 	'massicoter' => 'Recadrer l’image',
 	'massicoter_logo' => 'Recadrer le logo',
 	'massicoter_logo_survol' => 'Recadrer le logo de survol',
+	'selection_recadrage' => 'Sélection de recadrage. Utilisez les flèches pour la déplacer.',
+	'zone_recadrage' => 'Zone interactive de recadrage',
 	'mode_compatibilite_explication' => 'À conserver temporairement après une mise à jour depuis Massicot 1.x. Ce mode modifie globalement les balises de documents et de logos. Désactivez-le après avoir remplacé ces usages par le filtre explicite massicoter_objet.',
 	'mode_compatibilite_label' => 'Activer les traitements automatiques historiques (déprécié)',
 

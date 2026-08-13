@@ -27,6 +27,8 @@ $GLOBALS[$GLOBALS['idx_lang']] = array(
 	'massicoter' => 'Crop the image',
 	'massicoter_logo' => 'Crop logo',
 	'massicoter_logo_survol' => 'Crop rollover logo',
+	'selection_recadrage' => 'Crop selection. Use arrow keys to move it.',
+	'zone_recadrage' => 'Interactive crop area',
 	'mode_compatibilite_explication' => 'Keep this temporarily after upgrading from Massicot 1.x. Disable it after templates use the explicit massicoter_objet filter.',
 	'mode_compatibilite_label' => 'Enable deprecated automatic treatments',
 

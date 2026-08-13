@@ -544,6 +544,40 @@ function massicoter_objet($fichier, $objet, $id_objet, $role = null) {
 }
 
 /**
+ * Applique un recadrage aux seules images qui affichent la source de l'objet.
+ *
+ * SPIP reste propriétaire de la balise HTML et de tous ses attributs. Massicot
+ * ne remplace que le src lorsqu'un dérivé a effectivement été produit.
+ */
+function massicot_appliquer_recadrage_html($html, $objet, $id_objet, $role = '') {
+	$source = massicot_chemin_image($objet, $id_objet, $role);
+	$parametres = massicot_get_parametres($objet, $id_objet, $role);
+	if (!$html || !$source || !$parametres) {
+		return $html;
+	}
+
+	$derive = massicoter_fichier($source, $parametres);
+	if (!$derive || $derive === $source) {
+		return $html;
+	}
+
+	include_spip('inc/filtres');
+	$source_path = parse_url($source, PHP_URL_PATH) ?: $source;
+	return preg_replace_callback(
+		'#<img\\b[^>]*>#i',
+		function ($match) use ($source_path, $derive) {
+			$src = extraire_attribut($match[0], 'src');
+			$src_path = $src ? (parse_url($src, PHP_URL_PATH) ?: $src) : '';
+			if (!$src_path || basename($src_path) !== basename($source_path)) {
+				return $match[0];
+			}
+			return inserer_attribut($match[0], 'src', $derive);
+		},
+		$html
+	);
+}
+
+/**
  * Massicoter un logo document
  *
  * Traitement automatique sur les balises #LOGO_DOCUMENT

@@ -66,21 +66,8 @@ function autoriser_massicoter_dist($faire, $type, $id, $qui, $opt) {
 function massicot_jquery_plugins($scripts) {
 
 	if (test_espace_prive() && _request('exec') === 'massicoter_image') {
-		$scripts[] = 'lib/jquery.imgareaselect.js/jquery.imgareaselect.dev.js';
 		$scripts[] = 'javascripts/formulaireMassicoterImage.js';
 	}
-
-	return $scripts;
-}
-
-/**
- * Ajoute le plugins jqueryui Slider
- *
- * @pipeline jqueryui_plugins
- * @param  array $scripts  Plugins jqueryui à charger
- * @return array	   Liste des plugins jquerui complétée
- */
-function massicot_jqueryui_plugins($scripts) {
 
 	return $scripts;
 }
@@ -97,8 +84,6 @@ function massicot_header_prive($flux) {
 		$flux .= '<link rel="stylesheet" type="text/css" media="screen" href="' .
 			  find_in_path('css/massicot.css') . '" />';
 
-		$flux .= '<link rel="stylesheet" type="text/css" media="screen" href="' .
-			  find_in_path('lib/jquery.imgareaselect.js/distfiles/css/imgareaselect-default.css') . '" />';
 	}
 	return $flux;
 }
@@ -176,10 +161,17 @@ function massicot_formulaire_fond($flux) {
 		return $flux;
 	}
 
-	$flux['data'] .= recuperer_fond(
+	$actions = recuperer_fond(
 		'prive/squelettes/inclure/massicot_actions_logo',
 		array('objet' => $objet, 'id_objet' => $id_objet, 'redirect' => self())
 	);
+	if ($actions) {
+		$flux['data'] = preg_replace('#</form>#i', $actions . '</form>', $flux['data'], 1);
+	}
+
+	// Le formulaire et ses attributs restent natifs : seul le src est dérivé.
+	$flux['data'] = massicot_appliquer_recadrage_html($flux['data'], $objet, $id_objet, '');
+	$flux['data'] = massicot_appliquer_recadrage_html($flux['data'], $objet, $id_objet, 'logo_survol');
 	return $flux;
 }
 

@@ -5,8 +5,9 @@
     #ACTION_FORMULAIRE{#ENV{action}}
 
 	<div class="zoom_wrap">
-      <label><:massicot:zoom:></label>
-      <div id="zoom-slider"></div>
+      <label for="massicot-zoom"><:massicot:zoom:></label>
+      <input id="massicot-zoom" class="massicot-zoom" type="range" min="0.1" max="3" step="0.01" value="#ENV{zoom,1}" />
+	  <output class="massicot-zoom-value" for="massicot-zoom">#ENV{zoom,1}×</output>
 	</div>
 
 	<div class="wrap_dimensions">
@@ -14,33 +15,41 @@
       <span class="dimensions"></span>
 	</div>
 
-    <ul>
+    <div class="massicot-champs">
       #GENERER_SAISIES{#ENV{_saisies}}
-    </ul>
+    </div>
 
     [(#REM) ajouter les saisies supplementaires : extra et autre, a
             cet endroit ]
     <!--extra-->
 
-    <p class="boutons">
+    <div class="boutons massicot-actions">
       <span class="image_loading"></span>
-      <a href="#" class="bouton_reset"><:massicot:reinitialiser:></a>
-      <input type="submit" class="submit" name="annuler" value="<:massicot:label_annuler:>" />
-      <input type="submit" class="submit" value="[(#ENV{saisies_texte_submit}|sinon{<:massicot:massicoter:>})]" />
-    </p>
+      <button type="button" class="btn btn_secondaire bouton_reset"><:massicot:reinitialiser:></button>
+      <input type="submit" class="btn btn_secondaire submit" name="annuler" value="<:massicot:label_annuler:>" />
+      <input type="submit" class="btn btn_primaire submit" value="[(#ENV{saisies_texte_submit}|sinon{<:massicot:massicoter:>})]" />
+    </div>
 
   </div>
 </form>
 
 
-<div class="image-massicot">
-  [(#ENV{objet}|massicot_chemin_image{#ENV{id_objet}, #ENV{role}}|balise_img{'', 'no-adapt-img'})]
+<div class="image-massicot" tabindex="0" aria-label="<:massicot:zone_recadrage:>">
+  <div class="massicot-canevas">
+    [(#ENV{objet}|massicot_chemin_image{#ENV{id_objet}, #ENV{role}}|balise_img{'', 'no-adapt-img'})]
+    <div class="massicot-selection" tabindex="0" role="group" aria-label="<:massicot:selection_recadrage:>">
+      <span class="massicot-poignee massicot-poignee-no" data-handle="nw" tabindex="0"></span>
+      <span class="massicot-poignee massicot-poignee-ne" data-handle="ne" tabindex="0"></span>
+      <span class="massicot-poignee massicot-poignee-so" data-handle="sw" tabindex="0"></span>
+      <span class="massicot-poignee massicot-poignee-se" data-handle="se" tabindex="0"></span>
+    </div>
+  </div>
 </div>
 
 
 <script type="text/javascript">
- $(function () {
-   window.massicot = $('#formulaire_massicoter_image').formulaireMassicoterImage({
+ document.addEventListener('DOMContentLoaded', function () {
+   window.massicot = window.MassicotCropper.init(document.getElementById('formulaire_massicoter_image'), {
      zoom: #ENV{zoom,1},
      messages: {
        'erreur_image_trop_petite': "<:massicot:erreur_image_trop_petite:>"
