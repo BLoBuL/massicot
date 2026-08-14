@@ -1,5 +1,13 @@
 # Journal des changements
 
+## [2.3.0] - 2026-08-14
+
+### Ajouté
+
+- préréglages de recadrage libre, 1:1, 2:1, 1:2, 3:4 et 4:3 ;
+- recalcul centré immédiat de la sélection et de l’aperçu final ;
+- verrouillage du rapport lors du redimensionnement de la sélection.
+
 ## [2.2.0] - 2026-08-13
 
 ### Ajouté

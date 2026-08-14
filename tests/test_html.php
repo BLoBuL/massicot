@@ -43,6 +43,11 @@ $tests = array(
 	'apercu proportions dynamiques' => str_contains($javascript, 'outputPreview.width =')
 		&& str_contains($javascript, 'outputPreview.height =')
 		&& str_contains($javascript, 'quarterTurn ? cropHeight : cropWidth'),
+	'formats proposes' => str_contains($interface, 'data-ratio="1"')
+		&& str_contains($interface, 'data-ratio="2"')
+		&& str_contains($interface, 'data-ratio="0.5"')
+		&& str_contains($interface, 'data-ratio="0.75"')
+		&& str_contains($interface, 'data-ratio="1.3333333333"'),
 );
 
 $echecs = array_keys(array_filter($tests, fn($ok) => !$ok));

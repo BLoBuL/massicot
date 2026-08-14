@@ -10,6 +10,8 @@ if (!defined('_ECRIRE_INC_VERSION')) {
 $GLOBALS[$GLOBALS['idx_lang']] = array(
 	'supprimer_recadrage' => 'Remover recorte',
 	'filtres_titre' => 'Aparência da imagem',
+	'formats_titre' => 'Formato do corte',
+	'format_libre' => 'Livre',
 	'filtre_aucun' => 'Original',
 	'filtre_nb' => 'Preto e branco',
 	'filtre_sepia' => 'Sépia',

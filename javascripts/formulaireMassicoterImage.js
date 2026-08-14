@@ -21,6 +21,7 @@
 		var zoomValue = form.querySelector('.massicot-zoom-value');
 		var dimensions = form.querySelector('.dimensions');
 		var reset = form.querySelector('.bouton_reset');
+		var formatButtons = form.querySelectorAll('.massicot-format');
 		var filterButtons = form.querySelectorAll('.massicot-filtre');
 		var fields = {};
 		['x1', 'x2', 'y1', 'y2', 'zoom', 'filtre', 'rotation'].forEach(function (name) {
@@ -32,7 +33,8 @@
 		var outputPreview = form.querySelector('.massicot-apercu-sortie-canvas');
 		var outputPreviewContext = outputPreview ? outputPreview.getContext('2d') : null;
 		var forced = options.forcer_dimensions || null;
-		var ratio = forced ? nombre(forced.largeur, 1) / nombre(forced.hauteur, 1) : null;
+		var forcedRatio = forced ? nombre(forced.largeur, 1) / nombre(forced.hauteur, 1) : null;
+		var activeRatio = forcedRatio;
 		var sourceWidth = 0;
 		var sourceHeight = 0;
 		var state;
@@ -141,15 +143,54 @@
 			scheduleOutputPreview();
 		}
 
+		function updateFormatButtons() {
+			formatButtons.forEach(function (button) {
+				var buttonRatio = button.dataset.ratio === '' ? null : nombre(button.dataset.ratio, null);
+				var selected = activeRatio === null
+					? buttonRatio === null
+					: buttonRatio !== null && Math.abs(buttonRatio - activeRatio) < 0.001;
+				button.classList.toggle('on', selected);
+				button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+				button.disabled = forcedRatio !== null;
+			});
+		}
+
+		function applyAspectRatio(nextRatio) {
+			if (forcedRatio !== null) { nextRatio = forcedRatio; }
+			activeRatio = nextRatio === null || nextRatio === '' ? null : nombre(nextRatio, null);
+			updateFormatButtons();
+			if (!activeRatio || !state) { return; }
+			var width = state.x2 - state.x1;
+			var height = state.y2 - state.y1;
+			var centerX = state.x1 + width / 2;
+			var centerY = state.y1 + height / 2;
+			if (width / height > activeRatio) { width = height * activeRatio; }
+			else { height = width / activeRatio; }
+			writeState(Object.assign({}, state, {
+				x1: centerX - width / 2, x2: centerX + width / 2,
+				y1: centerY - height / 2, y2: centerY + height / 2
+			}));
+		}
+
+		function inferAspectRatio() {
+			if (forcedRatio !== null || !state) { return forcedRatio; }
+			var currentRatio = (state.x2 - state.x1) / (state.y2 - state.y1);
+			var presets = [1, 2, 0.5, 0.75, 4 / 3];
+			for (var index = 0; index < presets.length; index++) {
+				if (Math.abs(currentRatio - presets[index]) < 0.002) { return presets[index]; }
+			}
+			return null;
+		}
+
 		function resizeFrom(handle, start, dx, dy) {
 			var next = Object.assign({}, start);
 			if (handle.indexOf('w') !== -1) { next.x1 += dx; }
 			if (handle.indexOf('e') !== -1) { next.x2 += dx; }
 			if (handle.indexOf('n') !== -1) { next.y1 += dy; }
 			if (handle.indexOf('s') !== -1) { next.y2 += dy; }
-			if (ratio) {
+			if (activeRatio) {
 				var width = next.x2 - next.x1;
-				var height = width / ratio;
+				var height = width / activeRatio;
 				if (handle.indexOf('n') !== -1) { next.y1 = next.y2 - height; }
 				else { next.y2 = next.y1 + height; }
 			}
@@ -212,6 +253,7 @@
 
 		function resetAll() {
 			writeState({x1: 0, y1: 0, x2: sourceWidth, y2: sourceHeight, zoom: 1});
+			applyAspectRatio(forcedRatio);
 			applyFilter('aucun');
 			applyRotation(0);
 		}
@@ -230,6 +272,9 @@
 			selection.addEventListener('keydown', keyboard);
 			zoom.addEventListener('input', zoomChanged);
 			reset.addEventListener('click', resetAll);
+			formatButtons.forEach(function (button) {
+				button.addEventListener('click', function () { applyAspectRatio(button.dataset.ratio); });
+			});
 			filterButtons.forEach(function (button) {
 				button.addEventListener('click', function () { applyFilter(button.dataset.filtre); });
 			});
@@ -243,6 +288,11 @@
 			});
 			applyFilter(fields.filtre.value || 'aucun');
 			applyRotation(fields.rotation.value || 0);
+			if (forcedRatio !== null) { applyAspectRatio(forcedRatio); }
+			else {
+				activeRatio = inferAspectRatio();
+				updateFormatButtons();
+			}
 			form.classList.add('massicot-ready');
 		}
 

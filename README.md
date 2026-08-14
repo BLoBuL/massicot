@@ -30,11 +30,12 @@ Lors d’une mise à jour depuis Massicot 1.x, le mode de compatibilité est act
 Depuis un logo, un document image ou une vignette, choisir **Recadrer** :
 
 1. régler le zoom ;
-2. déplacer ou redimensionner la sélection avec la souris, le tactile ou les flèches (`Maj` augmente le pas) ;
-3. sélectionner éventuellement un filtre ;
-4. choisir une rotation de sortie avec les commandes 0°, 90°, 180° ou 270° et
+2. choisir éventuellement un format libre, 1:1, 2:1, 1:2, 3:4 ou 4:3 ;
+3. déplacer ou redimensionner la sélection avec la souris, le tactile ou les flèches (`Maj` augmente le pas) ;
+4. sélectionner éventuellement un filtre ;
+5. choisir une rotation de sortie avec les commandes 0°, 90°, 180° ou 270° et
    contrôler le résultat dans l’aperçu final ;
-5. valider avec **Recadrer l’image**.
+6. valider avec **Recadrer l’image**.
 
 **Réinitialiser** restaure l’image entière, le rendu original et une rotation nulle. **Supprimer le recadrage** efface uniquement la règle Massicot. Le fichier source n’est jamais remplacé.
 

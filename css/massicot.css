@@ -92,6 +92,14 @@
 	background: var(--spip-color-theme-lightest, #f6f6f6);
 }
 
+.massicot-formats { margin: 0; padding: 0; border: 0; }
+.massicot-formats legend { margin-bottom: .6rem; font-weight: 700; }
+.massicot-formats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; }
+.massicot-format { min-height: 2.5rem; padding: .35rem .5rem; border: 1px solid var(--spip-color-gray-light, #d8d8d8); border-radius: .4rem; background: #fff; color: inherit; cursor: pointer; font-variant-numeric: tabular-nums; }
+.massicot-format:hover { border-color: var(--spip-color-theme, #3858a6); }
+.massicot-format.on { border-color: var(--spip-color-theme, #3858a6); box-shadow: 0 0 0 2px color-mix(in srgb, var(--spip-color-theme, #3858a6) 28%, transparent); font-weight: 700; }
+.massicot-format:disabled { cursor: not-allowed; opacity: .55; }
+
 .dimensions { font-weight: 700; font-variant-numeric: tabular-nums; }
 .massicot-champs:empty { display: none; }
 .massicot-champs > ul { margin: 0; }
