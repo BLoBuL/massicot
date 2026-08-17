@@ -1,5 +1,14 @@
 # Journal des changements
 
+## [2.3.1] - 2026-08-17
+
+### Corrigé
+
+- suppression de l'inclusion qui tentait de compiler la feuille statique
+  `css/massicot.css` comme un squelette SPIP inexistant ;
+- conservation du chargement ciblé des styles et du JavaScript sur l'écran de
+  recadrage via le pipeline `header_prive`.
+
 ## [2.3.0] - 2026-08-14
 
 ### Ajouté

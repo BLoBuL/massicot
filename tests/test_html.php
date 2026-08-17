@@ -20,7 +20,9 @@ $html = '<picture><source srcset="original.webp 2x"><img src="original.jpg" alt=
 $resultat = massicot_remplacer_premiere_image_html($html, 'cache/derive.jpg', array(60, 50));
 $interface = file_get_contents(dirname(__DIR__) . '/formulaires/massicoter_image.html');
 $javascript = file_get_contents(dirname(__DIR__) . '/javascripts/formulaireMassicoterImage.js');
+$style_prive = file_get_contents(dirname(__DIR__) . '/prive/style_prive_plugin_massicot.html');
 $tests = array(
+	'feuille statique non compilee comme squelette' => !str_contains($style_prive, '#INCLURE{fond=css/massicot.css}'),
 	'source remplacee' => str_contains($resultat, 'src="cache/derive.jpg"'),
 	'dimensions actualisees' => str_contains($resultat, 'width="60"') && str_contains($resultat, 'height="50"'),
 	'attributs preserves' => str_contains($resultat, 'alt="Portrait"')
