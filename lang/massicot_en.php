@@ -57,8 +57,8 @@ $GLOBALS[$GLOBALS['idx_lang']] = array(
 	'exif_iso' => 'Sensitivity',
 	'exif_focale' => 'Focal length',
 	'zone_recadrage' => 'Interactive crop area',
-	'mode_compatibilite_explication' => 'Keep this temporarily after upgrading from Massicot 1.x. Disable it after templates use the explicit massicoter_objet filter.',
-	'mode_compatibilite_label' => 'Enable deprecated automatic treatments',
+	'mode_compatibilite_explication' => 'When this option is enabled, templates built for Massicot 1.x continue to apply saved crops automatically to documents and logos. Keep it enabled until those templates have been updated. You can disable it once images that require cropping explicitly use the massicoter_objet filter. Disabling it does not delete images or saved crops.',
+	'mode_compatibilite_label' => 'Compatibility with Massicot 1.x templates',
 
 	// R
 	'reinitialiser' => 'Reset',

@@ -21,7 +21,10 @@ $resultat = massicot_remplacer_premiere_image_html($html, 'cache/derive.jpg', ar
 $interface = file_get_contents(dirname(__DIR__) . '/formulaires/massicoter_image.html');
 $javascript = file_get_contents(dirname(__DIR__) . '/javascripts/formulaireMassicoterImage.js');
 $style_prive = file_get_contents(dirname(__DIR__) . '/prive/style_prive_plugin_massicot.html');
+$lang_fr = file_get_contents(dirname(__DIR__) . '/lang/massicot_fr.php');
 $tests = array(
+	'explication compatibilite explicite' => str_contains($lang_fr, 'Compatibilité avec les squelettes Massicot 1.x')
+		&& str_contains($lang_fr, 'La désactivation ne supprime ni les images ni les recadrages enregistrés.'),
 	'feuille statique non compilee comme squelette' => !str_contains($style_prive, '#INCLURE{fond=css/massicot.css}'),
 	'source remplacee' => str_contains($resultat, 'src="cache/derive.jpg"'),
 	'dimensions actualisees' => str_contains($resultat, 'width="60"') && str_contains($resultat, 'height="50"'),

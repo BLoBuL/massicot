@@ -1,5 +1,12 @@
 # Journal des changements
 
+## [2.3.2] - 2026-08-17
+
+### Amélioré
+
+- clarification du mode de compatibilité Massicot 1.x : comportement conservé,
+  condition de désactivation et absence de suppression des recadrages.
+
 ## [2.3.1] - 2026-08-17
 
 ### Corrigé

@@ -55,8 +55,8 @@ $GLOBALS[$GLOBALS['idx_lang']] = array(
 	'exif_iso' => 'Sensibilité',
 	'exif_focale' => 'Focale',
 	'zone_recadrage' => 'Zone interactive de recadrage',
-	'mode_compatibilite_explication' => 'À conserver temporairement après une mise à jour depuis Massicot 1.x. Ce mode modifie globalement les balises de documents et de logos. Désactivez-le après avoir remplacé ces usages par le filtre explicite massicoter_objet.',
-	'mode_compatibilite_label' => 'Activer les traitements automatiques historiques (déprécié)',
+	'mode_compatibilite_explication' => 'Lorsque cette option est cochée, les squelettes conçus pour Massicot 1.x continuent d’appliquer automatiquement les recadrages aux documents et aux logos. Laissez-la cochée tant que ces squelettes n’ont pas été adaptés. Vous pourrez la décocher lorsque les images à recadrer utiliseront explicitement le filtre massicoter_objet. La désactivation ne supprime ni les images ni les recadrages enregistrés.',
+	'mode_compatibilite_label' => 'Compatibilité avec les squelettes Massicot 1.x',
 
 	// O
 	'operation_non_autorisee' => 'Opération non autorisée.',
