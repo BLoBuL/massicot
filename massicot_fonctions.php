@@ -419,8 +419,40 @@ function massicoter_document($fichier = false) {
  * @return string : Un fichier massicoté
  */
 function massicoter_objet($fichier, $objet, $id_objet, $role = null) {
-
+	if (is_string($fichier) && stripos($fichier, '<img') !== false) {
+		$source = massicot_chemin_image($objet, $id_objet, $role);
+		$derive = $source ? massicoter_fichier(
+			$source,
+			massicot_get_parametres($objet, $id_objet, $role)
+		) : '';
+		if (!$derive || $derive === $source) {
+			return $fichier;
+		}
+		$dimensions = @getimagesize(parse_url($derive, PHP_URL_PATH) ?: $derive);
+		return massicot_remplacer_premiere_image_html($fichier, $derive, $dimensions);
+	}
 	return massicoter_fichier($fichier, massicot_get_parametres($objet, $id_objet, $role));
+}
+
+/**
+ * Remplace uniquement la source de la première image en conservant tous les
+ * attributs HTML produits par SPIP.
+ */
+function massicot_remplacer_premiere_image_html($html, $derive, $dimensions = false) {
+	include_spip('inc/filtres');
+	return preg_replace_callback(
+		'#<img\\b[^>]*>#i',
+		function ($match) use ($derive, $dimensions) {
+			$balise = inserer_attribut($match[0], 'src', $derive);
+			if ($dimensions) {
+				$balise = inserer_attribut($balise, 'width', $dimensions[0]);
+				$balise = inserer_attribut($balise, 'height', $dimensions[1]);
+			}
+			return $balise;
+		},
+		$html,
+		1
+	);
 }
 
 /**
@@ -567,7 +599,8 @@ function massicoter_logo($logo, $objet_type = null, $id_objet = null, $role = nu
 
 	$parametres = massicot_get_parametres($objet_type, $id_objet, $role);
 
-	$fichier = massicoter_fichier($src, $parametres);
+	$source = massicot_chemin_image($objet_type, $id_objet, $role) ?: $src;
+	$fichier = massicoter_fichier($source, $parametres);
 
 	if ($onmouseout) {
 		$onmouseout = str_replace($src, $fichier, $onmouseout);
@@ -576,7 +609,8 @@ function massicoter_logo($logo, $objet_type = null, $id_objet = null, $role = nu
 	if ($onmouseover) {
 		$src_off = preg_replace('/^.*[\']([^\']+)[\']/', '$1', $onmouseover);
 		$parametres_off = massicot_get_parametres($objet_type, $id_objet, 'logo_survol');
-		$fichier_off = massicoter_fichier($src_off, $parametres_off);
+		$source_off = massicot_chemin_image($objet_type, $id_objet, 'logo_survol') ?: $src_off;
+		$fichier_off = massicoter_fichier($source_off, $parametres_off);
 		$onmouseover = str_replace($src_off, $fichier_off, $onmouseover);
 	}
 
