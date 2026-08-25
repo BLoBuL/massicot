@@ -5,6 +5,17 @@
 
 	<form method="post" action="#ENV{action}"><div>
 		#ACTION_FORMULAIRE{#ENV{action}}
+		<div class="notice">
+			<h4><:massicot:diagnostic_migration_titre:></h4>
+			[(#ENV{mode_compatibilite}|=={oui}|oui)
+				<p><strong><:massicot:diagnostic_mode_actif:></strong></p>
+			]
+			[(#ENV{mode_compatibilite}|=={oui}|non)
+				<p><strong><:massicot:diagnostic_mode_inactif:></strong></p>
+			]
+			<p>[(#ENV{diagnostic_total_recadrages}|singulier_ou_pluriel{massicot:diagnostic_recadrage_un,massicot:diagnostic_recadrages_plusieurs})]</p>
+			<p><:massicot:diagnostic_limite:></p>
+		</div>
 		<div class="editer-groupe">
 			<div class="editer editer_mode_compatibilite">
 				<div class="choix">

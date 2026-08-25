@@ -1,7 +1,12 @@
 <?php
 
 $configuration = null;
+$nombre_recadrages = 44;
 function include_spip($fichier) {
+}
+function sql_countsel($table) {
+	global $nombre_recadrages;
+	return $table === 'spip_massicotages_liens' ? $nombre_recadrages : 0;
 }
 function ecrire_config($cle, $valeur) {
 	global $configuration;
@@ -9,6 +14,12 @@ function ecrire_config($cle, $valeur) {
 }
 
 require dirname(__DIR__) . '/massicot_administrations.php';
+require dirname(__DIR__) . '/formulaires/configurer_massicot.php';
+
+if (massicot_compter_recadrages() !== 44) {
+	fwrite(STDERR, "ECHEC diagnostic des recadrages\n");
+	exit(1);
+}
 
 massicot_initialiser_configuration(false);
 if ($configuration !== array('massicot/mode_compatibilite', 'non')) {
@@ -22,4 +33,4 @@ if ($configuration !== array('massicot/mode_compatibilite', 'oui')) {
 	exit(1);
 }
 
-echo "2 tests migration OK\n";
+echo "3 tests migration OK\n";

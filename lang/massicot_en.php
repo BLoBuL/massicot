@@ -11,6 +11,14 @@ $GLOBALS[$GLOBALS['idx_lang']] = array(
 	// C
 	'configuration_titre' => 'Massicot migration',
 
+	// D
+	'diagnostic_limite' => 'Massicot cannot automatically verify whether every site template uses the massicoter_objet filter.',
+	'diagnostic_migration_titre' => 'Migration status',
+	'diagnostic_mode_actif' => 'Massicot 1.x compatibility is enabled.',
+	'diagnostic_mode_inactif' => 'The site uses Massicot’s modern behavior.',
+	'diagnostic_recadrage_un' => 'One saved crop is preserved.',
+	'diagnostic_recadrages_plusieurs' => '@nb@ saved crops are preserved.',
+
 	// E
 	'erreur_fichier_image' => 'The image file cannot be found or read.',
 	'erreur_image_trop_petite' => 'This image is too small for this preset.',

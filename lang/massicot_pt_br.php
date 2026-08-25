@@ -8,6 +8,12 @@ if (!defined('_ECRIRE_INC_VERSION')) {
 }
 
 $GLOBALS[$GLOBALS['idx_lang']] = array(
+	'diagnostic_limite' => 'O Massicot não pode verificar automaticamente se todos os esqueletos do site usam o filtro massicoter_objet.',
+	'diagnostic_migration_titre' => 'Estado da migração',
+	'diagnostic_mode_actif' => 'A compatibilidade com o Massicot 1.x está ativa.',
+	'diagnostic_mode_inactif' => 'O site usa o funcionamento moderno do Massicot.',
+	'diagnostic_recadrage_un' => 'Um recorte salvo está preservado.',
+	'diagnostic_recadrages_plusieurs' => '@nb@ recortes salvos estão preservados.',
 	'supprimer_recadrage' => 'Remover recorte',
 	'filtres_titre' => 'Aparência da imagem',
 	'formats_titre' => 'Formato do corte',

@@ -15,6 +15,14 @@ $GLOBALS[$GLOBALS['idx_lang']] = array(
 	'erreur_parametre_manquant' => 'Le paramètre @parametre@ est obligatoire !',
 	'erreur_parametres_invalides' => 'Les paramètres de recadrage sont invalides.',
 
+	// D
+	'diagnostic_limite' => 'Massicot ne peut pas vérifier automatiquement si tous les squelettes du site utilisent le filtre massicoter_objet.',
+	'diagnostic_migration_titre' => 'État de la migration',
+	'diagnostic_mode_actif' => 'La compatibilité Massicot 1.x est active.',
+	'diagnostic_mode_inactif' => 'Le site utilise le fonctionnement moderne de Massicot.',
+	'diagnostic_recadrage_un' => 'Un recadrage enregistré est conservé.',
+	'diagnostic_recadrages_plusieurs' => '@nb@ recadrages enregistrés sont conservés.',
+
 	// L
 	'label_annuler' => 'Annuler',
 	'label_dimensions' => 'Taille de l’image recadrée en pixels : ',
