@@ -29,81 +29,18 @@ function massicot_autoriser() { }
  * @return bool          true s'il a le droit, false sinon
  */
 function autoriser_massicoter_dist($faire, $type, $id, $qui, $opt) {
+	include_spip('massicot_fonctions');
 	if ($type === 'document') {
 		$ext = sql_getfetsel(
 			'extension',
 			'spip_documents',
 			'id_document='.intval($id)
 		);
-		if ($ext === 'svg') {
+		if (!massicot_extension_recadrable($ext)) {
 			return false;
-		}
-	} else {
-		$chercher_logo = charger_fonction('chercher_logo', 'inc');
-		foreach(array('on', 'off') as $role) {
-		$logo = $chercher_logo($id, $type, $role);
-			if (is_array($logo)) {
-				$logo = array_shift($logo);
-				if (!is_null($logo)) {
-					$logo = pathinfo($logo);
-					if (!empty($logo['extension']) && ($logo['extension'] === 'svg')) {
-						return false;
-					}
-				}
-			}
 		}
 	}
 	return autoriser('modifier', $type, $id, $qui, $opt);
-}
-
-/**
- * Insérer le plugin jquery de selection du cadre
- *
- * @pipeline jquery_plugins
- * @param  array $scripts  Les scripts qui seront insérés dans la page
- * @return array	   La liste des scripts complétée
- */
-function massicot_jquery_plugins($scripts) {
-
-	if (test_espace_prive()) {
-		$scripts[] = 'lib/jquery.imgareaselect.js/jquery.imgareaselect.dev.js';
-		$scripts[] = 'javascripts/formulaireMassicoterImage.js';
-	}
-
-	return $scripts;
-}
-
-/**
- * Ajoute le plugins jqueryui Slider
- *
- * @pipeline jqueryui_plugins
- * @param  array $scripts  Plugins jqueryui à charger
- * @return array	   Liste des plugins jquerui complétée
- */
-function massicot_jqueryui_plugins($scripts) {
-
-	if (version_compare($GLOBALS['spip_version_branche'], '3.2', '<') and test_espace_prive()) {
-		$scripts[] = 'jquery.ui.slider';
-	}
-	return $scripts;
-}
-
-/**
- * Ajouter un brin de CSS
- *
- * @pipeline header_prive
- * @param  array $flux Données du pipeline
- * @return array	   Données du pipeline
- */
-function massicot_header_prive($flux) {
-	if (test_espace_prive()) {
-		$flux .= '<link rel="stylesheet" type="text/css" media="screen" href="' .
-			  find_in_path('css/massicot.css') . '" />';
-
-		$flux .= '<link rel="stylesheet" type="text/css" media="screen" href="' .
-			  find_in_path('lib/jquery.imgareaselect.js/distfiles/css/imgareaselect-default.css') . '" />';
-	}
-	return $flux;
 }
 
 /**
@@ -134,30 +71,7 @@ function massicot_post_edition($flux) {
 
 	if (isset($flux['args']['type']) and ($flux['args']['type'] === 'document')
 	    and isset($flux['data']['fichier'])) {
-		include_spip('base/abstract_sql');
-		include_spip('action/editer_liens');
-
-		$id_document = $flux['args']['id_objet'];
-
-		$massicotages = objet_trouver_liens(
-			array('massicotage' => '*'),
-			array('document' => $id_document)
-		);
-
-		$id_massicotages = array();
-
-		foreach ($massicotages as $cle => $valeur) {
-			$id_massicotages[] = $valeur['id_massicotage'];
-		}
-
-		sql_delete(
-			'spip_massicotages',
-			sql_in('id_massicotage', $id_massicotages)
-		);
-		sql_delete(
-			'spip_massicotages_liens',
-			sql_in('id_massicotage', $id_massicotages)
-		);
+		massicot_supprimer_tous('document', $flux['args']['id_objet']);
 	}
 
 	return $flux;
@@ -172,72 +86,142 @@ function massicot_post_edition($flux) {
  */
 function massicot_formulaire_traiter($flux) {
 
-	if (($flux['args']['form'] === 'editer_logo')
-	    and (_request('supprimer_logo_on'))) {
-		include_spip('base/abstract_sql');
-		include_spip('action/editer_liens');
-
-		$objet = $flux['args']['args'][0];
-		$id_objet = $flux['args']['args'][1];
-
-		$massicotages = objet_trouver_liens(
-			array('massicotage' => '*'),
-			array($objet => $id_objet)
+	if (($flux['args']['form'] ?? '') === 'editer_logo') {
+		$objet = $flux['args']['args'][0] ?? '';
+		$id_objet = (int) ($flux['args']['args'][1] ?? 0);
+		$fichiers = is_array($_FILES ?? null)
+			? $_FILES
+			: ($GLOBALS['HTTP_POST_FILES'] ?? array());
+		$roles = massicot_roles_logo_modifies(
+			$fichiers,
+			(bool) _request('supprimer_logo_on'),
+			(bool) _request('supprimer_logo_off'),
+			empty($flux['data']['message_erreur'])
 		);
-
-		$id_massicotages = array();
-
-		foreach ($massicotages as $cle => $valeur) {
-			$id_massicotages[] = $valeur['id_massicotage'];
+		foreach ($roles as $role) {
+			massicot_supprimer($objet, $id_objet, $role);
 		}
-
-		sql_delete(
-			'spip_massicotages',
-			sql_in('id_massicotage', $id_massicotages)
-		);
-		sql_delete(
-			'spip_massicotages_liens',
-			sql_in('id_massicotage', $id_massicotages)
-		);
 	}
 
 	return $flux;
 }
 
 /**
- * Ajouter un lien pour recadrer les vignettes des documents
- *
- * @pipeline editer_contenu_objet
- * @param  array $flux Données du pipeline
- * @return array       Données du pipeline
+ * Détermine quels rôles ont réellement été supprimés ou remplacés par le
+ * formulaire natif de SPIP.
  */
-function massicot_editer_contenu_objet($flux) {
-
-	$html = $flux['data'];
-	$args = $flux['args'];
-
-	if ($args['type'] === 'illustrer_document') {
-		include_spip('base/abstract_sql');
-		include_spip('inc/autoriser');
-
-		if ($id_vignette = sql_getfetsel(
-			'id_vignette',
-			'spip_documents',
-			'id_document='.intval($args['id'])
-		)
-		and autoriser('massicoter', 'document', $args['id'])
-		and autoriser('massicoter', 'document', $id_vignette)) {
-			$href = generer_url_ecrire(
-				'massicoter_image',
-				'objet=document&id_objet=' . $id_vignette . '&redirect=' . urlencode(self())
-			);
-			$lien = '<a href="' . $href . '"><strong>' . _T('massicot:massicoter') . '</strong></a>';
-
-			$repere = '<span class=\'image_loading\'>';
-			$flux['data'] = str_replace($repere, $lien . $repere, $html);
+function massicot_roles_logo_modifies($fichiers, $supprimer_on, $supprimer_off, $traitement_ok = true) {
+	$roles = array();
+	if ($supprimer_on) {
+		$roles[] = '';
+	}
+	if ($supprimer_off) {
+		$roles[] = 'logo_survol';
+	}
+	if ($traitement_ok && is_array($fichiers)) {
+		if (isset($fichiers['logo_on']) && (int) ($fichiers['logo_on']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+			$roles[] = '';
+		}
+		if (isset($fichiers['logo_off']) && (int) ($fichiers['logo_off']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+			$roles[] = 'logo_survol';
 		}
 	}
+	return array_values(array_unique($roles));
+}
 
+/**
+ * Charge la feuille du recadreur dans l'en-tête de l'espace privé.
+ */
+function massicot_header_prive($flux) {
+	if (test_espace_prive() && _request('exec') === 'massicoter_image') {
+		include_spip('inc/filtres');
+		$css = timestamp(find_in_path('css/massicot.css'));
+		$flux .= '<link rel="stylesheet" href="' . attribut_html($css) . '" type="text/css">';
+		$js = timestamp(find_in_path('javascripts/formulaireMassicoterImage.js'));
+		$flux .= '<script src="' . attribut_html($js) . '"></script>';
+	}
+	return $flux;
+}
+
+/**
+ * Ajoute les actions de recadrage au formulaire natif des logos sans
+ * surcharger son squelette complet.
+ */
+function massicot_formulaire_fond($flux) {
+	$form = $flux['args']['form'] ?? '';
+	if ($form === 'illustrer_document') {
+		include_spip('base/abstract_sql');
+		include_spip('inc/autoriser');
+		$contexte = $flux['args']['contexte'] ?? array();
+		$args = $flux['args']['args'] ?? array();
+		$id_document = (int) ($contexte['id_document'] ?? ($args[0] ?? 0));
+		$id_vignette = $id_document ? (int) sql_getfetsel(
+			'id_vignette',
+			'spip_documents',
+			'id_document=' . $id_document
+		) : 0;
+		if (!$id_vignette || !autoriser('massicoter', 'document', $id_vignette)) {
+			return $flux;
+		}
+		$actions = recuperer_fond(
+			'prive/squelettes/inclure/massicot_actions_document',
+			array('id_document' => $id_vignette, 'redirect' => self())
+		);
+		if ($actions) {
+			$flux['data'] = preg_replace('#</form>#i', $actions . '</form>', $flux['data'], 1);
+		}
+		return $flux;
+	}
+
+	if ($form === 'editer_document') {
+		include_spip('inc/autoriser');
+		$contexte = $flux['args']['contexte'] ?? array();
+		$args = $flux['args']['args'] ?? array();
+		$id_document = (int) ($contexte['id_document'] ?? ($args[0] ?? 0));
+		if (!$id_document || !autoriser('massicoter', 'document', $id_document)) {
+			return $flux;
+		}
+		$actions = recuperer_fond(
+			'prive/squelettes/inclure/massicot_actions_document',
+			array('id_document' => $id_document, 'redirect' => self())
+		);
+		if ($actions) {
+			$flux['data'] = preg_replace('#</form>#i', $actions . '</form>', $flux['data'], 1);
+		}
+		$flux['data'] = massicot_appliquer_recadrage_html(
+			$flux['data'],
+			'document',
+			$id_document
+		);
+		$flux['data'] = massicot_appliquer_recadrage_apercu_document($flux['data'], $id_document);
+		return $flux;
+	}
+
+	if ($form !== 'editer_logo') {
+		return $flux;
+	}
+
+	$contexte = $flux['args']['contexte'] ?? array();
+	$args = $flux['args']['args'] ?? array();
+	$objet = $contexte['objet'] ?? ($args[0] ?? '');
+	$id_objet = isset($contexte['id_objet'])
+		? (int) $contexte['id_objet']
+		: (isset($args[1]) ? (int) $args[1] : 0);
+	if (!$objet) {
+		return $flux;
+	}
+
+	$actions = recuperer_fond(
+		'prive/squelettes/inclure/massicot_actions_logo',
+		array('objet' => $objet, 'id_objet' => $id_objet, 'redirect' => self())
+	);
+	if ($actions) {
+		$flux['data'] = preg_replace('#</form>#i', $actions . '</form>', $flux['data'], 1);
+	}
+
+	// Le formulaire et ses attributs restent natifs : seul le src est dérivé.
+	$flux['data'] = massicot_appliquer_recadrage_html($flux['data'], $objet, $id_objet, '');
+	$flux['data'] = massicot_appliquer_recadrage_html($flux['data'], $objet, $id_objet, 'logo_survol');
 	return $flux;
 }
 
@@ -251,7 +235,8 @@ function massicot_editer_contenu_objet($flux) {
 function massicot_formulaire_charger($flux) {
 
 	if (($flux['args']['form'] === 'illustrer_document')
-			and isset($id_vignette) and $id_vignette) {
+			&& !empty($flux['data']['id_vignette'])
+			&& !empty($flux['data']['vignette'])) {
 		$parametres = massicot_get_parametres(
 			'document',
 			$flux['data']['id_vignette']
@@ -264,4 +249,27 @@ function massicot_formulaire_charger($flux) {
 	}
 
 	return $flux;
+}
+
+/**
+ * Normalise l'orientation EXIF des images générées par les modèles SPIP 4.
+ *
+ * Le pipeline post_propre couvre notamment les raccourcis <docXX>, <imgXX>
+ * et les portfolios. Il ne modifie jamais la source éditoriale et devient
+ * naturellement neutre pour une image sans orientation EXIF.
+ *
+ * @pipeline post_propre
+ */
+function massicot_post_propre($html) {
+	if (!is_string($html) || $html === '' || stripos($html, '<img') === false) {
+		return $html;
+	}
+	include_spip('massicot_fonctions');
+	return preg_replace_callback(
+		'#<img\b[^>]*>#i',
+		function ($correspondance) {
+			return massicot_normaliser_images_html_spip4($correspondance[0]);
+		},
+		$html
+	);
 }

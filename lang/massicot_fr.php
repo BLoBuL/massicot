@@ -6,10 +6,22 @@ if (!defined('_ECRIRE_INC_VERSION')) {
 }
 
 $GLOBALS[$GLOBALS['idx_lang']] = array(
+	// C
+	'configuration_titre' => 'Migration de Massicot',
 
 	// E
 	'erreur_image_trop_petite' => 'Cette image est trop petite pour ce format.',
+	'erreur_fichier_image' => 'Le fichier image est introuvable ou illisible.',
 	'erreur_parametre_manquant' => 'Le paramètre @parametre@ est obligatoire !',
+	'erreur_parametres_invalides' => 'Les paramètres de recadrage sont invalides.',
+
+	// D
+	'diagnostic_limite' => 'Massicot ne peut pas vérifier automatiquement si tous les squelettes du site utilisent le filtre massicoter_objet.',
+	'diagnostic_migration_titre' => 'État de la migration',
+	'diagnostic_mode_actif' => 'La compatibilité Massicot 1.x est active.',
+	'diagnostic_mode_inactif' => 'Le site utilise le fonctionnement moderne de Massicot.',
+	'diagnostic_recadrage_un' => 'Un recadrage enregistré est conservé.',
+	'diagnostic_recadrages_plusieurs' => '@nb@ recadrages enregistrés sont conservés.',
 
 	// L
 	'label_annuler' => 'Annuler',
@@ -19,6 +31,40 @@ $GLOBALS[$GLOBALS['idx_lang']] = array(
 	// M
 	'massicot_titre' => 'Massicot',
 	'massicoter' => 'Recadrer l’image',
+	'massicoter_logo' => 'Recadrer le logo',
+	'massicoter_logo_survol' => 'Recadrer le logo de survol',
+	'selection_recadrage' => 'Sélection de recadrage. Utilisez les flèches pour la déplacer.',
+	'supprimer_recadrage' => 'Supprimer le recadrage',
+	'filtres_titre' => 'Rendu de l’image',
+	'formats_titre' => 'Format de recadrage',
+	'format_libre' => 'Libre',
+	'filtre_aucun' => 'Original',
+	'filtre_nb' => 'Noir et blanc',
+	'filtre_sepia' => 'Sépia',
+	'filtre_lumineux' => 'Plus clair',
+	'filtre_sombre' => 'Plus sombre',
+	'filtre_net' => 'Plus net',
+	'filtre_flou' => 'Flou doux',
+	'exif_titre' => 'Informations de l’image (EXIF)',
+	'rotation_titre' => 'Rotation de sortie',
+	'rotation_gauche' => 'Tourner de 90° vers la gauche',
+	'rotation_droite' => 'Tourner de 90° vers la droite',
+	'rotation_aucune' => 'Aucune rotation',
+	'rotation_demi_tour' => 'Tourner de 180°',
+	'rotation_apercu' => 'Aperçu du rendu final',
+	'rotation_explication' => 'Le rendu utilise image_rotation() de SPIP 4, contrôlé et corrigé par Massicot. L’orientation EXIF est normalisée automatiquement.',
+	'exif_dimensions' => 'Dimensions',
+	'exif_mime' => 'Format',
+	'exif_appareil' => 'Appareil',
+	'exif_objectif' => 'Objectif',
+	'exif_prise_de_vue' => 'Prise de vue',
+	'exif_exposition' => 'Exposition',
+	'exif_ouverture' => 'Ouverture',
+	'exif_iso' => 'Sensibilité',
+	'exif_focale' => 'Focale',
+	'zone_recadrage' => 'Zone interactive de recadrage',
+	'mode_compatibilite_explication' => 'Lorsque cette option est cochée, les squelettes conçus pour Massicot 1.x continuent d’appliquer automatiquement les recadrages aux documents et aux logos. Laissez-la cochée tant que ces squelettes n’ont pas été adaptés. Vous pourrez la décocher lorsque les images à recadrer utiliseront explicitement le filtre massicoter_objet. La désactivation ne supprime ni les images ni les recadrages enregistrés.',
+	'mode_compatibilite_label' => 'Compatibilité avec les squelettes Massicot 1.x',
 
 	// O
 	'operation_non_autorisee' => 'Opération non autorisée.',

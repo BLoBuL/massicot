@@ -1,12 +1,12 @@
 <paquet
 	prefix="massicot"
 	categorie="multimedia"
-	version="1.0.0"
-	etat="stable"
-	compatibilite="[4.2.0;4.*]"
+	version="2.4.0"
+	etat="test"
+	compatibilite="[4.0.0;4.*]"
 	logo="prive/themes/spip/images/massicot-48.png"
 	documentation="https://contrib.spip.net/Massicot"
-	schema="1.1.0"
+	schema="2.0.1"
 >
 	<!-- crédit icône : http://ic8.link/1047 -->
 
@@ -23,20 +23,19 @@
 	<pipeline nom="declarer_tables_auxiliaires" inclure="base/massicot.php" />
 
 	<pipeline nom="autoriser"        inclure="massicot_pipelines.php" />
-	<pipeline nom="jquery_plugins"   inclure="massicot_pipelines.php" />
-	<pipeline nom="jqueryui_plugins" inclure="massicot_pipelines.php" />
 	<pipeline nom="header_prive"     inclure="massicot_pipelines.php" />
 	<pipeline nom="document_desc_actions" inclure="massicot_pipelines.php" />
 	<pipeline nom="post_edition" inclure="massicot_pipelines.php" />
 	<pipeline nom="formulaire_charger" inclure="massicot_pipelines.php" />
 	<pipeline nom="formulaire_traiter" inclure="massicot_pipelines.php" />
-	<pipeline nom="editer_contenu_objet" inclure="massicot_pipelines.php" />
+	<pipeline nom="formulaire_fond" inclure="massicot_pipelines.php" />
+	<pipeline nom="post_propre" inclure="massicot_pipelines.php" />
 
-	<!-- <lib nom="jquery.imgareaselect.js" lien="https://github.com/odyniec/imgareaselect/archive/master.zip" /> -->
-
-	<necessite nom="jqueryui" />
+	<necessite nom="php" compatibilite="[8.0.0;[" />
 	<necessite nom="medias" compatibilite="[2.7.59;[" />
 	<necessite nom="saisies" compatibilite="[3.23.2;[" />
 
 	<utilise nom="roles_documents" compatibilite="[1.1.8;[" />
+
+	<menu nom="configurer_massicot" titre="massicot:configuration_titre" parent="menu_configuration" icone="prive/themes/spip/images/massicot-xx.svg" />
 </paquet>

@@ -1,3 +1,5 @@
+<div class="massicot-workspace">
+<aside class="massicot-tools">
 <form method="post" id="formulaire_massicoter_image" action="#ENV{action}" enctype="multipart/form-data">
   <div>
     [(#REM) declarer les hidden qui declencheront le service du
@@ -5,8 +7,9 @@
     #ACTION_FORMULAIRE{#ENV{action}}
 
 	<div class="zoom_wrap">
-      <label><:massicot:zoom:></label>
-      <div id="zoom-slider"></div>
+      <label for="massicot-zoom"><:massicot:zoom:></label>
+      <input id="massicot-zoom" class="massicot-zoom" type="range" min="0.1" max="10" step="0.01" value="#ENV{zoom,1}" />
+	  <output class="massicot-zoom-value" for="massicot-zoom">#ENV{zoom,1}×</output>
 	</div>
 
 	<div class="wrap_dimensions">
@@ -14,36 +17,99 @@
       <span class="dimensions"></span>
 	</div>
 
-    <ul>
+	<fieldset class="massicot-formats">
+	  <legend><:massicot:formats_titre:></legend>
+	  <div class="massicot-formats-grid">
+	    <button type="button" class="massicot-format on" data-ratio="" aria-pressed="true"><:massicot:format_libre:></button>
+	    <button type="button" class="massicot-format" data-ratio="1" aria-pressed="false">1:1</button>
+	    <button type="button" class="massicot-format" data-ratio="2" aria-pressed="false">2:1</button>
+	    <button type="button" class="massicot-format" data-ratio="0.5" aria-pressed="false">1:2</button>
+	    <button type="button" class="massicot-format" data-ratio="0.75" aria-pressed="false">3:4</button>
+	    <button type="button" class="massicot-format" data-ratio="1.3333333333" aria-pressed="false">4:3</button>
+	  </div>
+	</fieldset>
+
+	<fieldset class="massicot-filtres">
+	  <legend><:massicot:filtres_titre:></legend>
+	  <div class="massicot-filtres-grid">
+	  <BOUCLE_filtres(DATA){source table, #ENV{_filtres}}>
+	    <button type="button" class="massicot-filtre[ (#ENV{filtre,aucun}|=={#CLE}|oui)on]" data-filtre="#CLE" aria-pressed="[(#ENV{filtre,aucun}|=={#CLE}|?{true,false})]">
+	      <span class="massicot-filtre-apercu massicot-filtre-apercu--#CLE" aria-hidden="true"></span>
+	      #VALEUR
+	    </button>
+	  </BOUCLE_filtres>
+	  </div>
+	</fieldset>
+
+	<fieldset class="massicot-rotation">
+	  <legend><:massicot:rotation_titre:></legend>
+	  <div class="massicot-rotation-controles">
+	    <button type="button" class="btn btn_secondaire massicot-tourner" data-angle="-90" aria-label="<:massicot:rotation_gauche:>">↶</button>
+	    <button type="button" class="btn btn_secondaire massicot-rotation-directe" data-rotation="0" aria-label="<:massicot:rotation_aucune:>">0°</button>
+	    <button type="button" class="btn btn_secondaire massicot-rotation-directe" data-rotation="180" aria-label="<:massicot:rotation_demi_tour:>">180°</button>
+	    <output class="massicot-rotation-valeur">#ENV{rotation,0}°</output>
+	    <button type="button" class="btn btn_secondaire massicot-tourner" data-angle="90" aria-label="<:massicot:rotation_droite:>">↷</button>
+	  </div>
+	  <div class="massicot-apercu-sortie">
+	    <span class="massicot-apercu-sortie-label"><:massicot:rotation_apercu:></span>
+	    <canvas class="massicot-apercu-sortie-canvas" width="240" height="160" aria-label="<:massicot:rotation_apercu:>"></canvas>
+	  </div>
+	  <p class="explication"><:massicot:rotation_explication:></p>
+	</fieldset>
+
+	[(#ENV{_exif}|oui)
+	<details class="massicot-exif">
+	  <summary><:massicot:exif_titre:></summary>
+	  <dl>
+	  <BOUCLE_exif(DATA){source table, #ENV{_exif}}>
+	    <div><dt>[(#CLE|massicot_label_exif)]</dt><dd>#VALEUR</dd></div>
+	  </BOUCLE_exif>
+	  </dl>
+	</details>]
+
+    <div class="massicot-champs">
       #GENERER_SAISIES{#ENV{_saisies}}
-    </ul>
+    </div>
 
     [(#REM) ajouter les saisies supplementaires : extra et autre, a
             cet endroit ]
     <!--extra-->
 
-    <p class="boutons">
+    <div class="boutons massicot-actions">
       <span class="image_loading"></span>
-      <a href="#" class="bouton_reset"><:massicot:reinitialiser:></a>
-      <input type="submit" class="submit" name="annuler" value="<:massicot:label_annuler:>" />
-      <input type="submit" class="submit" value="[(#ENV{saisies_texte_submit}|sinon{<:massicot:massicoter:>})]" />
-    </p>
+      <button type="button" class="btn btn_secondaire bouton_reset"><:massicot:reinitialiser:></button>
+      [(#ENV{_recadrage_existant}|oui)
+      <button type="submit" class="btn btn_danger submit" name="supprimer_recadrage" value="oui"><:massicot:supprimer_recadrage:></button>]
+      <input type="submit" class="btn btn_secondaire submit" name="annuler" value="<:massicot:label_annuler:>" />
+      <input type="submit" class="btn btn_primaire submit" value="[(#ENV{saisies_texte_submit}|sinon{<:massicot:massicoter:>})]" />
+    </div>
 
   </div>
 </form>
+</aside>
 
 
-<div class="image-massicot">
-  [(#ENV{objet}|massicot_chemin_image{#ENV{id_objet}, #ENV{role}}|balise_img{'', 'no-adapt-img'})]
+<div class="image-massicot" tabindex="0" aria-label="<:massicot:zone_recadrage:>">
+  <div class="massicot-canevas">
+    [(#ENV{_source_affichage}|balise_img{'', 'no-adapt-img'})]
+    <div class="massicot-selection" tabindex="0" role="group" aria-label="<:massicot:selection_recadrage:>">
+      <span class="massicot-poignee massicot-poignee-no" data-handle="nw" tabindex="0"></span>
+      <span class="massicot-poignee massicot-poignee-ne" data-handle="ne" tabindex="0"></span>
+      <span class="massicot-poignee massicot-poignee-so" data-handle="sw" tabindex="0"></span>
+      <span class="massicot-poignee massicot-poignee-se" data-handle="se" tabindex="0"></span>
+    </div>
+  </div>
+</div>
 </div>
 
 
 <script type="text/javascript">
- $(function () {
-   window.massicot = $('#formulaire_massicoter_image').formulaireMassicoterImage({
+ document.addEventListener('DOMContentLoaded', function () {
+   window.massicot = window.MassicotCropper.init(document.getElementById('formulaire_massicoter_image'), {
      zoom: #ENV{zoom,1},
      messages: {
-       'erreur_image_trop_petite': "<:massicot:erreur_image_trop_petite:>"
+       'erreur_image_trop_petite': "<:massicot:erreur_image_trop_petite:>",
+       'erreur_fichier_image': "<:massicot:erreur_fichier_image:>"
      }[,
 	   forcer_dimensions: (#ENV{forcer_dimensions}|json_encode)]
    });

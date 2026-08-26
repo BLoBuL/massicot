@@ -21,12 +21,29 @@
 function massicot_upgrade($nom_meta_base_version, $version_cible) {
 	$maj = array();
 
-	$maj['create'] = array(array('maj_tables', array('spip_massicotages', 'spip_massicotages_liens')));
+	$maj['create'] = array(
+		array('maj_tables', array('spip_massicotages', 'spip_massicotages_liens')),
+		array('massicot_initialiser_configuration', false),
+	);
 
 	$maj['1.1.0'] = array(array('maj_tables', array('spip_massicotages_liens')));
+	$maj['2.0.0'] = array(array('massicot_initialiser_configuration', true));
+	$maj['2.0.1'] = array(array('maj_tables', array('spip_massicotages_liens')));
 
 	include_spip('base/upgrade');
 	maj_plugin($nom_meta_base_version, $version_cible, $maj);
+}
+
+/**
+ * Initialise le mode de compatibilite.
+ *
+ * Une installation neuve n'altere pas les balises natives de SPIP. Lors de
+ * la mise a jour d'un site 1.x, le comportement historique reste actif le
+ * temps d'adapter explicitement ses squelettes.
+ */
+function massicot_initialiser_configuration($migration = false) {
+	include_spip('inc/config');
+	ecrire_config('massicot/mode_compatibilite', $migration ? 'oui' : 'non');
 }
 
 
@@ -41,6 +58,9 @@ function massicot_vider_tables($nom_meta_base_version) {
 
 	sql_drop_table('spip_massicotages');
 	sql_drop_table('spip_massicotages_liens');
+
+	include_spip('inc/config');
+	effacer_config('massicot');
 
 	effacer_meta($nom_meta_base_version);
 }

@@ -31,8 +31,18 @@ function massicot_chemin_image($objet, $id_objet, $role = null) {
 			'spip_documents',
 			'id_document='.intval($id_objet)
 		);
-		return $fichier ?
-			find_in_path(_NOM_PERMANENTS_ACCESSIBLES . $fichier) : '';
+		if (!$fichier) {
+			return '';
+		}
+		if (preg_match('#^https?://#i', $fichier)) {
+			return massicot_localiser_image($fichier);
+		}
+		include_spip('inc/documents');
+		$chemin = get_spip_doc($fichier);
+		if (!file_exists($chemin)) {
+			$chemin = find_in_path(_NOM_PERMANENTS_ACCESSIBLES . $fichier);
+		}
+		return massicot_localiser_image($chemin);
 	} else {
 		if ($role === 'logo_survol') {
 			$type_logo = 'off';
@@ -45,7 +55,164 @@ function massicot_chemin_image($objet, $id_objet, $role = null) {
 		$chercher_logo = charger_fonction('chercher_logo', 'inc');
 		$logo = $chercher_logo($id_objet, id_table_objet($objet), $type_logo);
 		if (is_array($logo)) {
-			return array_shift($logo);
+			return massicot_localiser_image(array_shift($logo));
+		}
+	}
+}
+
+/**
+ * Copie localement une image distante avec l'API native de SPIP.
+ *
+ * Les hébergeurs d'images refusent fréquemment l'affichage à chaud. Le
+ * traitement et l'aperçu doivent donc travailler sur la copie locale gérée
+ * par SPIP, sans modifier la source éditoriale du document ou du logo.
+ */
+function massicot_localiser_image($fichier) {
+	if (!$fichier || !preg_match('#^https?://#i', $fichier)) {
+		return $fichier;
+	}
+
+	include_spip('inc/distant');
+	$copie = copie_locale($fichier);
+	return $copie ? _DIR_RACINE . $copie : '';
+}
+
+/**
+ * Formats raster que les filtres images de SPIP 4 peuvent recadrer.
+ * La disponibilité effective du moteur est ensuite vérifiée par getimagesize.
+ */
+function massicot_extension_recadrable($extension) {
+	return in_array(strtolower((string) $extension), array(
+		'jpg', 'jpeg', 'png', 'gif', 'webp'
+	), true);
+}
+
+/**
+ * Filtres visuels stables fournis par le plugin Filtres Images de SPIP 4.
+ */
+function massicot_filtres_disponibles() {
+	return array('aucun', 'nb', 'sepia', 'lumineux', 'sombre', 'net', 'flou');
+}
+
+/**
+ * Rotations de sortie admises. Les quarts de tour sont suffisants pour
+ * corriger l'orientation d'une photographie sans interpolation arbitraire.
+ */
+function massicot_rotations_disponibles() {
+	return array(0, 90, 180, 270);
+}
+
+/**
+ * Vérifie qu'une source est une image raster réellement lisible.
+ */
+function massicot_fichier_recadrable($fichier) {
+	if (!$fichier) {
+		return false;
+	}
+	$path = parse_url($fichier, PHP_URL_PATH) ?: $fichier;
+	if (!massicot_extension_recadrable(pathinfo($path, PATHINFO_EXTENSION))) {
+		return false;
+	}
+	return (bool) @getimagesize($fichier);
+}
+
+/**
+ * Indique si les traitements automatiques de Massicot 1.x sont actifs.
+ */
+function massicot_mode_compatibilite() {
+	include_spip('inc/config');
+	return lire_config('massicot/mode_compatibilite', 'non') === 'oui';
+}
+
+/**
+ * Normalise et valide les parametres persistants ou recus du formulaire.
+ *
+ * @return array Tableau normalise, vide si les donnees sont invalides.
+ */
+function massicot_normaliser_parametres($parametres, $largeur = null, $hauteur = null) {
+	if (!is_array($parametres)) {
+		return array();
+	}
+
+	foreach (array('zoom', 'x1', 'x2', 'y1', 'y2') as $cle) {
+		if (!isset($parametres[$cle]) || !is_numeric($parametres[$cle])) {
+			return array();
+		}
+	}
+
+	$normalises = array(
+		'zoom' => (float) $parametres['zoom'],
+		'x1' => (int) round((float) $parametres['x1']),
+		'x2' => (int) round((float) $parametres['x2']),
+		'y1' => (int) round((float) $parametres['y1']),
+		'y2' => (int) round((float) $parametres['y2']),
+	);
+	$filtre = isset($parametres['filtre']) ? strtolower(trim((string) $parametres['filtre'])) : 'aucun';
+	$normalises['filtre'] = in_array($filtre, massicot_filtres_disponibles(), true) ? $filtre : 'aucun';
+	$rotation = isset($parametres['rotation']) && is_numeric($parametres['rotation'])
+		? ((int) round((float) $parametres['rotation']) % 360 + 360) % 360
+		: 0;
+	$normalises['rotation'] = in_array($rotation, massicot_rotations_disponibles(), true) ? $rotation : 0;
+
+	if ($normalises['zoom'] < 0.01 || $normalises['zoom'] > 10
+		|| $normalises['x1'] < 0 || $normalises['y1'] < 0
+		|| $normalises['x2'] <= $normalises['x1']
+		|| $normalises['y2'] <= $normalises['y1']) {
+		return array();
+	}
+
+	if ($largeur && $hauteur) {
+		$largeur_canevas = (int) ceil($largeur * $normalises['zoom']);
+		$hauteur_canevas = (int) ceil($hauteur * $normalises['zoom']);
+		if ($normalises['x2'] > $largeur_canevas || $normalises['y2'] > $hauteur_canevas) {
+			return array();
+		}
+	}
+
+	return $normalises;
+}
+
+/**
+ * Lit le format JSON 2.x et, en repli, les donnees serialisees de Massicot 1.x.
+ */
+function massicot_decoder_parametres($traitements) {
+	if (!is_string($traitements) || $traitements === '') {
+		return array();
+	}
+
+	$parametres = json_decode($traitements, true);
+	if (!is_array($parametres)) {
+		$parametres = @unserialize($traitements, array('allowed_classes' => false));
+	}
+
+	return massicot_normaliser_parametres($parametres);
+}
+
+/**
+ * Clé stable du cache mémoire de la requête HTTP courante.
+ */
+function massicot_cle_cache($objet, $id_objet, $role = '') {
+	return objet_type($objet) . ':' . (int) $id_objet . ':' . (string) $role;
+}
+
+/**
+ * Invalide les lectures mémorisées d'un objet après une écriture.
+ */
+function massicot_invalider_cache($objet, $id_objet, $role = null) {
+	$GLOBALS['massicot_documents_par_fichier'] = array();
+	foreach (array('massicot_parametres', 'massicot_identifiants') as $nom) {
+		if (!isset($GLOBALS[$nom]) || !is_array($GLOBALS[$nom])) {
+			$GLOBALS[$nom] = array();
+		}
+		if ($role !== null) {
+			unset($GLOBALS[$nom][massicot_cle_cache($objet, $id_objet, $role)]);
+			continue;
+		}
+		$prefixe = objet_type($objet) . ':' . (int) $id_objet . ':';
+		foreach (array_keys($GLOBALS[$nom]) as $cle) {
+			if (str_starts_with($cle, $prefixe)) {
+				unset($GLOBALS[$nom][$cle]);
+			}
 		}
 	}
 }
@@ -93,8 +260,16 @@ function massicot_enregistrer($objet, $id_objet, $parametres) {
 		$role = '';
 	}
 
-	$chemin_image = massicot_chemin_image($objet, $id_objet);
-	list($width, $height) = getimagesize($chemin_image);
+	$chemin_image = massicot_chemin_image($objet, $id_objet, $role);
+	$dimensions = $chemin_image ? @getimagesize($chemin_image) : false;
+	if (!$dimensions) {
+		return _T('massicot:erreur_fichier_image');
+	}
+	list($width, $height) = $dimensions;
+	$parametres = massicot_normaliser_parametres($parametres, $width, $height);
+	if (!$parametres) {
+		return _T('massicot:erreur_parametres_invalides');
+	}
 
 	$id_massicotage = sql_getfetsel(
 		'id_massicotage',
@@ -132,10 +307,13 @@ function massicot_enregistrer($objet, $id_objet, $parametres) {
 	if ($err = objet_modifier(
 		'massicotage',
 		$id_massicotage,
-		array('traitements' => serialize($parametres))
+		array('traitements' => json_encode($parametres, JSON_THROW_ON_ERROR))
 	)) {
 		return $err;
 	}
+	massicot_invalider_cache($objet, $id_objet, $role);
+	$GLOBALS['massicot_parametres'][massicot_cle_cache($objet, $id_objet, $role)] = $parametres;
+	$GLOBALS['massicot_identifiants'][massicot_cle_cache($objet, $id_objet, $role)] = (int) $id_massicotage;
 }
 
 /**
@@ -158,11 +336,8 @@ function massicot_supprimer($objet, $id_objet, $role='') {
 
 	$id_massicotage = massicot_get_id($objet, $id_objet, $role);
 
-	if (sql_delete(
-		'spip_massicotages',
-		'id_massicotage=' . intval($id_massicotage)
-	) === false) {
-		return "massicot_supprimer : erreur lors de la suppression";
+	if (!$id_massicotage) {
+		return null;
 	}
 
 	if (sql_delete(
@@ -171,7 +346,35 @@ function massicot_supprimer($objet, $id_objet, $role='') {
 	) === false) {
 		return "massicot_supprimer : erreur lors de la suppression";
 	}
+	massicot_invalider_cache($objet, $id_objet, $role);
 
+	if (sql_delete(
+		'spip_massicotages',
+		'id_massicotage=' . intval($id_massicotage)
+	) === false) {
+		return "massicot_supprimer : erreur lors de la suppression";
+	}
+
+}
+
+/**
+ * Supprime tous les recadrages associes a un objet remplace.
+ */
+function massicot_supprimer_tous($objet, $id_objet) {
+	include_spip('action/editer_liens');
+	$liens = objet_trouver_liens(
+		array('massicotage' => '*'),
+		array($objet => (int) $id_objet)
+	);
+	$ids = array_map('intval', array_column($liens, 'id_massicotage'));
+	if (!$ids) {
+		return;
+	}
+
+	$where = sql_in('id_massicotage', $ids);
+	sql_delete('spip_massicotages_liens', $where);
+	sql_delete('spip_massicotages', $where);
+	massicot_invalider_cache($objet, $id_objet);
 }
 
 /**
@@ -186,6 +389,10 @@ function massicot_supprimer($objet, $id_objet, $role='') {
  * @return integer|null : L'identifiant du massicotage, rien sinon
  */
 function massicot_get_id($objet, $id_objet, $role) {
+	$cle_cache = massicot_cle_cache($objet, $id_objet, $role);
+	if (array_key_exists($cle_cache, $GLOBALS['massicot_identifiants'] ?? array())) {
+		return $GLOBALS['massicot_identifiants'][$cle_cache] ?: null;
+	}
 
 	include_spip('action/editer_liens');
 
@@ -196,9 +403,11 @@ function massicot_get_id($objet, $id_objet, $role) {
 
 	foreach ($massicotages as $massicotage) {
 		if ($massicotage['role'] === $role) {
-			return intval($massicotage['id_massicotage']);
+			return $GLOBALS['massicot_identifiants'][$cle_cache] = intval($massicotage['id_massicotage']);
 		}
 	}
+	$GLOBALS['massicot_identifiants'][$cle_cache] = 0;
+	return null;
 }
 
 /**
@@ -214,6 +423,10 @@ function massicot_get_id($objet, $id_objet, $role) {
  * @return array : Un tableau avec les paramètres de massicotage
  */
 function massicot_get_parametres($objet, $id_objet, $role = '') {
+	$cle_cache = massicot_cle_cache($objet, $id_objet, $role);
+	if (array_key_exists($cle_cache, $GLOBALS['massicot_parametres'] ?? array())) {
+		return $GLOBALS['massicot_parametres'][$cle_cache];
+	}
 
 	include_spip('base/abstract_sql');
 
@@ -228,11 +441,10 @@ function massicot_get_parametres($objet, $id_objet, $role = '') {
 		)
 	);
 
-	if ($traitements) {
-		return unserialize($traitements);
-	} else {
-		return array();
-	}
+	$GLOBALS['massicot_parametres'][$cle_cache] = $traitements
+		? massicot_decoder_parametres($traitements)
+		: array();
+	return $GLOBALS['massicot_parametres'][$cle_cache];
 }
 
 /**
@@ -301,17 +513,27 @@ function massicoter_fichier($fichier, $parametres) {
 		}
 	}
 
-	/* ne rien faire s'il n'y a pas de massicotage défini */
-	if (! $parametres) {
+	$fichier = massicot_orienter_selon_exif($fichier);
+
+	$parametres = massicot_normaliser_parametres($parametres);
+
+	/* ne rien faire s'il n'y a pas de massicotage défini ou valide */
+	if (!$parametres) {
 		return $fichier;
 	}
 
-	list($width, $height) = getimagesize($fichier);
-	if ($parametres['zoom'] === '1'
-		&& $parametres['x1'] === '0'
-		&& $parametres['x2'] === (string)$width
-		&& $parametres['y1'] === '0'
-		&& $parametres['y2'] === (string)$height
+	$dimensions = @getimagesize($fichier);
+	if (!$dimensions) {
+		return $fichier_original;
+	}
+	list($width, $height) = $dimensions;
+	if ($parametres['zoom'] === 1.0
+		&& $parametres['x1'] === 0
+		&& $parametres['x2'] === $width
+		&& $parametres['y1'] === 0
+		&& $parametres['y2'] === $height
+		&& ($parametres['filtre'] ?? 'aucun') === 'aucun'
+		&& ($parametres['rotation'] ?? 0) === 0
 		) {
 		// Ne rien faire si rien ne change
 		return $fichier;
@@ -328,11 +550,11 @@ function massicoter_fichier($fichier, $parametres) {
 		);
 	} else {
 		$fichier = extraire_attribut(
-			image_recadre(
+			image_passe_partout(
 				$fichier,
 				intval($parametres['zoom'] * $width),
 				intval($parametres['zoom'] * $height),
-				'center'
+				true
 			),
 			'src'
 		);
@@ -371,7 +593,329 @@ function massicoter_fichier($fichier, $parametres) {
 		'src'
 	);
 
+	$fichier = massicot_appliquer_filtre_spip($fichier, $parametres['filtre'] ?? 'aucun');
+	$fichier = massicot_appliquer_rotation($fichier, $parametres['rotation'] ?? 0);
+
 	return $fichier;
+}
+
+/**
+ * Applique un quart de tour et contrôle le résultat de SPIP.
+ *
+ * Certaines combinaisons SPIP 4 / GD / EXIF retournent une image non tournée
+ * ou aux dimensions erronées à 90 degrés. On conserve le filtre natif comme
+ * chemin principal, puis on utilise un repli GD mis en cache si son résultat
+ * n'est pas exploitable.
+ */
+function massicot_appliquer_rotation($fichier, $rotation, $forcer_repli = false) {
+	$rotation = is_numeric($rotation) ? ((int) round((float) $rotation) % 360 + 360) % 360 : 0;
+	if (!in_array($rotation, massicot_rotations_disponibles(), true) || $rotation === 0) {
+		return $fichier;
+	}
+	$source = parse_url((string) $fichier, PHP_URL_PATH) ?: $fichier;
+	$dimensions_source = @getimagesize($source);
+	if (!$dimensions_source) {
+		return $fichier;
+	}
+	$largeur_attendue = in_array($rotation, array(90, 270), true) ? $dimensions_source[1] : $dimensions_source[0];
+	$hauteur_attendue = in_array($rotation, array(90, 270), true) ? $dimensions_source[0] : $dimensions_source[1];
+
+	if (!$forcer_repli) {
+		include_spip('inc/filtres');
+		include_spip('filtres/images_transforme');
+		$balise = image_rotation($fichier, $rotation, false);
+		$derive = is_string($balise) ? (extraire_attribut($balise, 'src') ?: $balise) : '';
+		$dimensions_derive = $derive ? @getimagesize(parse_url($derive, PHP_URL_PATH) ?: $derive) : false;
+		if ($dimensions_derive
+			&& $dimensions_derive[0] === $largeur_attendue
+			&& $dimensions_derive[1] === $hauteur_attendue) {
+			return $derive;
+		}
+		spip_log(
+			"Rotation SPIP non conforme ({$rotation} degres) pour {$source}, repli GD",
+			'massicot.' . _LOG_AVERTISSEMENT
+		);
+	}
+
+	$repli = massicot_rotation_gd($source, $rotation);
+	if (!$repli) {
+		return $fichier;
+	}
+	$dimensions_repli = @getimagesize($repli);
+	return ($dimensions_repli
+		&& $dimensions_repli[0] === $largeur_attendue
+		&& $dimensions_repli[1] === $hauteur_attendue)
+		? $repli
+		: $fichier;
+}
+
+/**
+ * Matérialise l'orientation EXIF avant tout recadrage.
+ *
+ * Les navigateurs savent souvent afficher l'orientation sans modifier les
+ * pixels, contrairement à certains usages CSS ou filtres SPIP 4. Massicot
+ * travaille ainsi sur une source dont pixels et dimensions sont cohérents.
+ */
+function massicot_orienter_selon_exif($fichier) {
+	$orientation = massicot_orientation_exif($fichier);
+	if ($orientation <= 1 || $orientation > 8) {
+		return $fichier;
+	}
+	$dimensions_source = @getimagesize($fichier);
+	$largeur_attendue = in_array($orientation, array(5, 6, 7, 8), true)
+		? ($dimensions_source[1] ?? 0)
+		: ($dimensions_source[0] ?? 0);
+	$hauteur_attendue = in_array($orientation, array(5, 6, 7, 8), true)
+		? ($dimensions_source[0] ?? 0)
+		: ($dimensions_source[1] ?? 0);
+
+	// Même chemin que SPIP 5 et que son rétroport récent dans Filtres Images.
+	include_spip('filtres/images_transforme');
+	if (function_exists('image_oriente_selon_exif')) {
+		$balise = image_oriente_selon_exif($fichier);
+		$derive_spip = is_string($balise) ? (extraire_attribut($balise, 'src') ?: $balise) : '';
+		$dimensions_spip = $derive_spip ? @getimagesize(parse_url($derive_spip, PHP_URL_PATH) ?: $derive_spip) : false;
+		if ($dimensions_spip
+			&& $dimensions_spip[0] === $largeur_attendue
+			&& $dimensions_spip[1] === $hauteur_attendue) {
+			return $derive_spip;
+		}
+	}
+	$miroir_horizontal = in_array($orientation, array(2, 4, 5, 7), true);
+	$rotation = array(3 => 180, 4 => 180, 5 => 270, 6 => 90, 7 => 90, 8 => 270)[$orientation] ?? 0;
+	$derive = massicot_transformation_gd($fichier, $rotation, $miroir_horizontal, 'exif-' . $orientation);
+	return $derive ?: $fichier;
+}
+
+/**
+ * Lit uniquement le champ EXIF Orientation des JPEG.
+ */
+function massicot_orientation_exif($fichier) {
+	if (!function_exists('exif_read_data')
+		|| !preg_match('/\.jpe?g$/i', parse_url((string) $fichier, PHP_URL_PATH) ?: $fichier)) {
+		return 1;
+	}
+	$exif = @exif_read_data($fichier, 'IFD0', true, false);
+	$orientation = (int) ($exif['IFD0']['Orientation'] ?? $exif['Orientation'] ?? 1);
+	return ($orientation >= 1 && $orientation <= 8) ? $orientation : 1;
+}
+
+/**
+ * Corrige les URL raster d'une balise image native produite par SPIP 4.
+ * Les attributs autres que src/srcset sont conservés à l'identique.
+ */
+function massicot_normaliser_images_html_spip4($balise) {
+	if (!is_string($balise) || stripos($balise, '<img') === false) {
+		return $balise;
+	}
+	$remplacer = function ($correspondance) {
+		$url = html_entity_decode($correspondance[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		$derive = massicot_orienter_url_image_locale($url);
+		if ($derive === $url) {
+			return $correspondance[0];
+		}
+		return $correspondance[1]
+			. attribut_html($derive)
+			. $correspondance[3];
+	};
+	$balise = preg_replace_callback(
+		'#((?:src)\s*=\s*["\'])([^"\']+)(["\'])#i',
+		$remplacer,
+		$balise
+	);
+	return preg_replace_callback(
+		'#((?:srcset)\s*=\s*["\'])([^"\']+)(["\'])#i',
+		function ($correspondance) {
+			$candidats = array_map('trim', explode(',', html_entity_decode($correspondance[2], ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+			foreach ($candidats as &$candidat) {
+				$parties = preg_split('/\s+/', $candidat, 2);
+				$parties[0] = massicot_orienter_url_image_locale($parties[0]);
+				$candidat = implode(' ', $parties);
+			}
+			unset($candidat);
+			return $correspondance[1] . attribut_html(implode(', ', $candidats)) . $correspondance[3];
+		},
+		$balise
+	);
+}
+
+/**
+ * Résout une URL locale, puis renvoie son dérivé orienté si nécessaire.
+ */
+function massicot_orienter_url_image_locale($url) {
+	if (!is_string($url) || $url === '' || preg_match('#^(?:data:|https?://|//)#i', $url)) {
+		return $url;
+	}
+	$parties = parse_url($url);
+	$chemin_url = $parties['path'] ?? '';
+	if (!preg_match('/\.jpe?g$/i', $chemin_url)) {
+		return $url;
+	}
+	$racine = defined('_DIR_RACINE') ? _DIR_RACINE : '';
+	$chemin = ltrim($chemin_url, '/');
+	$fichier = $racine . $chemin;
+	if (!is_file($fichier)) {
+		return $url;
+	}
+	$derive = massicot_orienter_selon_exif($fichier);
+	if (!$derive || $derive === $fichier) {
+		return $url;
+	}
+	$derive_url = $derive;
+	if ($racine && str_starts_with($derive_url, $racine)) {
+		$derive_url = substr($derive_url, strlen($racine));
+	}
+	if (str_starts_with($chemin_url, '/')) {
+		$derive_url = '/' . ltrim($derive_url, '/');
+	}
+	return $derive_url;
+}
+
+/**
+ * Repli fiable pour les rotations orthogonales, avec transparence préservée.
+ */
+function massicot_rotation_gd($fichier, $rotation) {
+	return massicot_transformation_gd($fichier, $rotation, false, 'rotation-' . $rotation);
+}
+
+/**
+ * Transformation GD commune au repli de rotation et à l'orientation EXIF.
+ */
+function massicot_transformation_gd($fichier, $rotation, $miroir_horizontal = false, $operation = 'transformation') {
+	$infos = @getimagesize($fichier);
+	if (!$infos || !function_exists('imagerotate') || ($miroir_horizontal && !function_exists('imageflip'))) {
+		return '';
+	}
+	$type = $infos[2] ?? 0;
+	$entrees = array(
+		IMAGETYPE_JPEG => array('imagecreatefromjpeg', 'imagejpeg', 'jpg'),
+		IMAGETYPE_PNG => array('imagecreatefrompng', 'imagepng', 'png'),
+		IMAGETYPE_GIF => array('imagecreatefromgif', 'imagegif', 'gif'),
+	);
+	if (defined('IMAGETYPE_WEBP')) {
+		$entrees[IMAGETYPE_WEBP] = array('imagecreatefromwebp', 'imagewebp', 'webp');
+	}
+	if (!isset($entrees[$type])) {
+		return '';
+	}
+	[$chargeur, $encodeur, $extension] = $entrees[$type];
+	if (!function_exists($chargeur) || !function_exists($encodeur)) {
+		return '';
+	}
+	include_spip('inc/flock');
+	$repertoire = sous_repertoire(_DIR_VAR, 'cache-massicot');
+	$empreinte = hash('sha256', 'transformation-v2|' . realpath($fichier) . '|' . @filemtime($fichier) . '|' . @filesize($fichier) . '|' . $operation . '|' . $rotation . '|' . (int) $miroir_horizontal);
+	$destination = $repertoire . preg_replace('/[^a-z0-9-]/i', '-', $operation) . '-' . $empreinte . '.' . $extension;
+	if (is_file($destination)) {
+		return $destination;
+	}
+	$image = @$chargeur($fichier);
+	if (!$image) {
+		return '';
+	}
+	if (function_exists('imagepalettetotruecolor')) {
+		@imagepalettetotruecolor($image);
+	}
+	if ($miroir_horizontal) {
+		@imageflip($image, IMG_FLIP_HORIZONTAL);
+	}
+	$transparent = imagecolorallocatealpha($image, 0, 0, 0, 127);
+	$tournee = $rotation ? @imagerotate($image, 360 - $rotation, $transparent) : $image;
+	if (!$tournee) {
+		imagedestroy($image);
+		return '';
+	}
+	if ($type === IMAGETYPE_PNG || (defined('IMAGETYPE_WEBP') && $type === IMAGETYPE_WEBP)) {
+		imagealphablending($tournee, false);
+		imagesavealpha($tournee, true);
+	}
+	$ecrit = match ($type) {
+		IMAGETYPE_JPEG => @$encodeur($tournee, $destination, 90),
+		IMAGETYPE_PNG => @$encodeur($tournee, $destination, 6),
+		defined('IMAGETYPE_WEBP') ? IMAGETYPE_WEBP : -1 => @$encodeur($tournee, $destination, 90),
+		default => @$encodeur($tournee, $destination),
+	};
+	if ($tournee !== $image) {
+		imagedestroy($tournee);
+	}
+	imagedestroy($image);
+	return $ecrit && is_file($destination) ? $destination : '';
+}
+
+/**
+ * Applique un effet via les filtres d'image natifs de SPIP 4.
+ */
+function massicot_appliquer_filtre_spip($fichier, $filtre) {
+	$filtre = in_array($filtre, massicot_filtres_disponibles(), true) ? $filtre : 'aucun';
+	if ($filtre === 'aucun') {
+		return $fichier;
+	}
+	include_spip('inc/filtres');
+	include_spip('filtres/images_transforme');
+	$dimensions_source = @getimagesize(parse_url($fichier, PHP_URL_PATH) ?: $fichier);
+	$balise = match ($filtre) {
+		'nb' => image_nb($fichier),
+		'sepia' => image_sepia($fichier),
+		'lumineux' => image_gamma($fichier, 24),
+		'sombre' => image_gamma($fichier, -24),
+		'net' => image_renforcement($fichier, 0.7),
+		'flou' => image_flou($fichier, 2),
+		default => $fichier,
+	};
+	if (!is_string($balise) || $balise === '') {
+		return $fichier;
+	}
+	$derive = extraire_attribut($balise, 'src');
+	$derive = $derive ?: $balise;
+	$dimensions_derive = @getimagesize(parse_url($derive, PHP_URL_PATH) ?: $derive);
+	if ($dimensions_source && $dimensions_derive
+		&& ($dimensions_source[0] !== $dimensions_derive[0] || $dimensions_source[1] !== $dimensions_derive[1])) {
+		$recadre = image_recadre($derive, $dimensions_source[0], $dimensions_source[1], 'center');
+		$derive = extraire_attribut($recadre, 'src') ?: $derive;
+	}
+	return $derive;
+}
+
+/**
+ * Métadonnées photographiques utiles, sans données GPS ni champs libres.
+ */
+function massicot_lire_exif($fichier) {
+	$dimensions = $fichier ? @getimagesize($fichier) : false;
+	$infos = array();
+	if ($dimensions) {
+		$infos['dimensions'] = $dimensions[0] . ' × ' . $dimensions[1] . ' px';
+		$infos['mime'] = $dimensions['mime'] ?? '';
+	}
+	if (!function_exists('exif_read_data') || !preg_match('/\.(jpe?g)$/i', parse_url((string) $fichier, PHP_URL_PATH) ?: $fichier)) {
+		return array_filter($infos);
+	}
+	$exif = @exif_read_data($fichier, 'IFD0,EXIF', true, false);
+	if (!is_array($exif)) {
+		return array_filter($infos);
+	}
+	$ifd0 = $exif['IFD0'] ?? array();
+	$prise = $exif['EXIF'] ?? array();
+	$champs = array(
+		'appareil' => trim(($ifd0['Make'] ?? '') . ' ' . ($ifd0['Model'] ?? '')),
+		'objectif' => $prise['LensModel'] ?? '',
+		'prise_de_vue' => $prise['DateTimeOriginal'] ?? '',
+		'exposition' => $prise['ExposureTime'] ?? '',
+		'ouverture' => isset($prise['FNumber']) ? 'f/' . massicot_exif_fraction($prise['FNumber']) : '',
+		'iso' => isset($prise['ISOSpeedRatings']) ? 'ISO ' . (is_array($prise['ISOSpeedRatings']) ? reset($prise['ISOSpeedRatings']) : $prise['ISOSpeedRatings']) : '',
+		'focale' => isset($prise['FocalLength']) ? massicot_exif_fraction($prise['FocalLength']) . ' mm' : '',
+	);
+	return array_filter(array_merge($infos, $champs), fn($valeur) => $valeur !== '' && $valeur !== null);
+}
+
+function massicot_exif_fraction($valeur) {
+	if (is_string($valeur) && preg_match('#^(-?\d+)/(\d+)$#', $valeur, $m) && (int) $m[2] !== 0) {
+		return round((int) $m[1] / (int) $m[2], 2);
+	}
+	return $valeur;
+}
+
+function massicot_label_exif($cle) {
+	return _T('massicot:exif_' . preg_replace('/[^a-z0-9_]/', '', strtolower((string) $cle)));
 }
 
 /**
@@ -391,18 +935,25 @@ function massicoter_document($fichier = false) {
 
 	include_spip('base/abstract_sql');
 	include_spip('inc/documents');
+	$cle_fichier = set_spip_doc($fichier);
+	if (array_key_exists($cle_fichier, $GLOBALS['massicot_documents_par_fichier'] ?? array())) {
+		return massicoter_fichier($fichier, $GLOBALS['massicot_documents_par_fichier'][$cle_fichier]);
+	}
 
 	$parametres = sql_getfetsel(
 		'traitements',
 		'spip_massicotages as M' .
 		' INNER JOIN spip_massicotages_liens as L ON L.id_massicotage = M.id_massicotage' .
 		' INNER JOIN spip_documents as D ON (D.id_document = L.id_objet AND L.objet="document")',
-		'D.fichier='.sql_quote(set_spip_doc($fichier))
+		'D.fichier='.sql_quote($cle_fichier)
 	);
 
 	if (!is_null($parametres)) {
-		$parametres = unserialize($parametres);
+		$parametres = massicot_decoder_parametres($parametres);
+	} else {
+		$parametres = array();
 	}
+	$GLOBALS['massicot_documents_par_fichier'][$cle_fichier] = $parametres;
 
 	return massicoter_fichier($fichier, $parametres);
 }
@@ -419,8 +970,119 @@ function massicoter_document($fichier = false) {
  * @return string : Un fichier massicoté
  */
 function massicoter_objet($fichier, $objet, $id_objet, $role = null) {
-
+	if (is_string($fichier) && stripos($fichier, '<img') !== false) {
+		$source = massicot_chemin_image($objet, $id_objet, $role);
+		$derive = $source ? massicoter_fichier(
+			$source,
+			massicot_get_parametres($objet, $id_objet, $role)
+		) : '';
+		if (!$derive || $derive === $source) {
+			return $fichier;
+		}
+		$dimensions = @getimagesize(parse_url($derive, PHP_URL_PATH) ?: $derive);
+		return massicot_remplacer_premiere_image_html($fichier, $derive, $dimensions);
+	}
 	return massicoter_fichier($fichier, massicot_get_parametres($objet, $id_objet, $role));
+}
+
+/**
+ * Remplace uniquement la source de la première image en conservant tous les
+ * attributs HTML produits par SPIP.
+ */
+function massicot_remplacer_premiere_image_html($html, $derive, $dimensions = false) {
+	include_spip('inc/filtres');
+	return preg_replace_callback(
+		'#<img\\b[^>]*>#i',
+		function ($match) use ($derive, $dimensions) {
+			$balise = inserer_attribut($match[0], 'src', $derive);
+			if ($dimensions) {
+				$balise = inserer_attribut($balise, 'width', $dimensions[0]);
+				$balise = inserer_attribut($balise, 'height', $dimensions[1]);
+			}
+			return $balise;
+		},
+		$html,
+		1
+	);
+}
+
+/**
+ * Applique un recadrage aux seules images qui affichent la source de l'objet.
+ *
+ * SPIP reste propriétaire de la balise HTML et de tous ses attributs. Massicot
+ * ne remplace que le src lorsqu'un dérivé a effectivement été produit.
+ */
+function massicot_appliquer_recadrage_html($html, $objet, $id_objet, $role = '') {
+	$source = massicot_chemin_image($objet, $id_objet, $role);
+	$parametres = massicot_get_parametres($objet, $id_objet, $role);
+	if (!$html || !$source || !$parametres) {
+		return $html;
+	}
+
+	$derive = massicoter_fichier($source, $parametres);
+	if (!$derive || $derive === $source) {
+		return $html;
+	}
+
+	include_spip('inc/filtres');
+	$sources = array(parse_url($source, PHP_URL_PATH) ?: $source);
+	if (objet_type($objet) === 'document') {
+		$original = sql_getfetsel('fichier', 'spip_documents', 'id_document=' . (int) $id_objet);
+		if ($original) {
+			$sources[] = parse_url($original, PHP_URL_PATH) ?: $original;
+		}
+	}
+	$noms_sources = array_unique(array_map('basename', $sources));
+	$dimensions = @getimagesize(parse_url($derive, PHP_URL_PATH) ?: $derive);
+	return preg_replace_callback(
+		'#<img\\b[^>]*>#i',
+		function ($match) use ($noms_sources, $derive, $dimensions) {
+			$src = extraire_attribut($match[0], 'src');
+			$src_path = $src ? (parse_url($src, PHP_URL_PATH) ?: $src) : '';
+			if (!$src_path || !in_array(basename($src_path), $noms_sources, true)) {
+				return $match[0];
+			}
+			$balise = inserer_attribut($match[0], 'src', $derive);
+			if ($dimensions) {
+				$balise = inserer_attribut($balise, 'width', $dimensions[0]);
+				$balise = inserer_attribut($balise, 'height', $dimensions[1]);
+			}
+			return $balise;
+		},
+		$html
+	);
+}
+
+/**
+ * Applique le dérivé à l'aperçu natif du formulaire editer_document.
+ *
+ * Cet aperçu est lui-même une vignette SPIP et ne porte donc plus le nom du
+ * fichier source. Le conteneur stable `.editer_apercu` est utilisé comme point
+ * d'intégration ciblé, sans copie du squelette de Médias.
+ */
+function massicot_appliquer_recadrage_apercu_document($html, $id_document) {
+	$source = massicot_chemin_image('document', $id_document);
+	$parametres = massicot_get_parametres('document', $id_document);
+	$derive = ($source && $parametres) ? massicoter_fichier($source, $parametres) : '';
+	if (!$derive || $derive === $source) {
+		return $html;
+	}
+
+	include_spip('inc/filtres');
+	$dimensions = @getimagesize(parse_url($derive, PHP_URL_PATH) ?: $derive);
+	return preg_replace_callback(
+		'#(<div\\b[^>]*class=(["\'])[^"\']*\\bediter_apercu\\b[^"\']*\\2[^>]*>.*?)(<img\\b[^>]*>)(.*?</div>)#is',
+		function ($match) use ($derive, $dimensions) {
+			$balise = inserer_attribut($match[3], 'src', $derive);
+			if ($dimensions) {
+				$balise = inserer_attribut($balise, 'width', $dimensions[0]);
+				$balise = inserer_attribut($balise, 'height', $dimensions[1]);
+			}
+			return $match[1] . $balise . $match[4];
+		},
+		$html,
+		1
+	);
 }
 
 /**
@@ -453,26 +1115,22 @@ function massicoter_logo_document($logo, $doc = array()) {
 	/* S'il n'y a pas de fichier dans la pile, on va le chercher dans
 	   la table documents */
 	if (! isset($doc['fichier'])) {
-		$rows = sql_allfetsel(
+		$row = sql_fetsel(
 			'fichier, extension',
 			'spip_documents',
 			'id_document='.intval($doc['id_document'])
 		);
-
-		$doc['fichier']	  = $rows[0]['fichier'];
-		$doc['extension'] = $rows[0]['extension'];
+		if (!$row) {
+			return $logo;
+		}
+		$doc['fichier'] = $row['fichier'];
+		$doc['extension'] = $row['extension'];
 	}
 
 	/* Si le document en question n'est pas une image, on ne fait rien */
 	if ((! $logo)
-		or (isset($doc['extension']) && preg_match('/^(jpe?g|png|gif)$/i', $doc['extension']) === 0)) {
+		or (isset($doc['extension']) && !massicot_extension_recadrable($doc['extension']))) {
 		return $logo;
-	}
-
-	/* S'il y a un lien sur le logo, on le met de côté pour le
-	   remettre après massicotage */
-	if (preg_match('#(<a.*?>)<img.*$#', $logo) === 1) {
-		$lien = preg_replace('#(<a.*?>)<img.*$#', '$1', $logo);
 	}
 
 	$fichier = extraire_attribut($logo, 'src');
@@ -486,29 +1144,35 @@ function massicoter_logo_document($logo, $doc = array()) {
 	list($largeur_logo, $hauteur_logo) =
 		getimagesize($fichier);
 
-	$balise_img = charger_filtre('balise_img');
-
 	$fichier_massicote = massicoter_document(get_spip_doc($doc['fichier']));
 
 	/* Comme le logo reçu en paramètre peut avoir été réduit grâce aux
 	   paramètres de la balise LOGO_, il faut s'assurer que l'image
 	   qu'on renvoie fait bien la même taille que le logo qu'on a
 	   reçu. */
-	$balise = image_reduire(
-		$balise_img(
-			$fichier_massicote,
-			extraire_attribut($logo, 'alt'),
-			extraire_attribut($logo, 'class')
-		),
+	$balise_reduite = image_reduire(
+		$fichier_massicote,
 		$largeur_logo,
 		$hauteur_logo
 	);
-
-	if (isset($lien)) {
-		$balise = $lien . $balise . '</a>';
-	}
-
-	return $balise;
+	$src_reduit = extraire_attribut($balise_reduite, 'src');
+	$largeur_reduite = extraire_attribut($balise_reduite, 'width');
+	$hauteur_reduite = extraire_attribut($balise_reduite, 'height');
+	return preg_replace_callback(
+		'#<img\\b[^>]*>#i',
+		function ($match) use ($src_reduit, $largeur_reduite, $hauteur_reduite) {
+			$balise = inserer_attribut($match[0], 'src', $src_reduit);
+			if ($largeur_reduite) {
+				$balise = inserer_attribut($balise, 'width', $largeur_reduite);
+			}
+			if ($hauteur_reduite) {
+				$balise = inserer_attribut($balise, 'height', $hauteur_reduite);
+			}
+			return $balise;
+		},
+		$logo,
+		1
+	);
 }
 
 /**
@@ -529,8 +1193,6 @@ function massicoter_logo($logo, $objet_type = null, $id_objet = null, $role = nu
 	}
 
 	$src     = extraire_attribut($logo, 'src');
-	$alt     = extraire_attribut($logo, 'alt');
-	$classes = extraire_attribut($logo, 'class');
 	$onmouseover = extraire_attribut($logo, 'onmouseover');
 	$onmouseout  = extraire_attribut($logo, 'onmouseout');
 
@@ -566,8 +1228,8 @@ function massicoter_logo($logo, $objet_type = null, $id_objet = null, $role = nu
 	}
 
 	$parametres = massicot_get_parametres($objet_type, $id_objet, $role);
-
-	$fichier = massicoter_fichier($src, $parametres);
+	$source = massicot_chemin_image($objet_type, $id_objet, $role) ?: $src;
+	$fichier = massicoter_fichier($source, $parametres);
 
 	if ($onmouseout) {
 		$onmouseout = str_replace($src, $fichier, $onmouseout);
@@ -576,17 +1238,26 @@ function massicoter_logo($logo, $objet_type = null, $id_objet = null, $role = nu
 	if ($onmouseover) {
 		$src_off = preg_replace('/^.*[\']([^\']+)[\']/', '$1', $onmouseover);
 		$parametres_off = massicot_get_parametres($objet_type, $id_objet, 'logo_survol');
-		$fichier_off = massicoter_fichier($src_off, $parametres_off);
+		$source_off = massicot_chemin_image($objet_type, $id_objet, 'logo_survol') ?: $src_off;
+		$fichier_off = massicoter_fichier($source_off, $parametres_off);
 		$onmouseover = str_replace($src_off, $fichier_off, $onmouseover);
 	}
 
-	$balise_img = charger_filtre('balise_img');
-
-	$balise = $balise_img($fichier, $alt, $classes);
-	$balise = inserer_attribut($balise, 'onmouseover', $onmouseover);
-	$balise = inserer_attribut($balise, 'onmouseout', $onmouseout);
-
-	return $balise;
+	return preg_replace_callback(
+		'#<img\\b[^>]*>#i',
+		function ($match) use ($fichier, $onmouseover, $onmouseout) {
+			$balise = inserer_attribut($match[0], 'src', $fichier);
+			if ($onmouseover) {
+				$balise = inserer_attribut($balise, 'onmouseover', $onmouseover);
+			}
+			if ($onmouseout) {
+				$balise = inserer_attribut($balise, 'onmouseout', $onmouseout);
+			}
+			return $balise;
+		},
+		$logo,
+		1
+	);
 }
 
 /**
@@ -635,33 +1306,3 @@ function massicoter_hauteur($hauteur, $doc = array()) {
 	return (string) round(($parametres['y2'] - $parametres['y1']));
 }
 
-/**
- * Rétro-portage d'une fonction du plugin Médias qui apparaît dans SPIP 3.2 et
- * qu'on utilise dans le squelettes modeles/document_desc.html
- */
-if (! function_exists('duree_en_secondes')) {
-	function duree_en_secondes($duree, $precis = false) {
-		$out = '';
-		$heures = $minutes = 0;
-		if ($duree>3600) {
-			$heures = intval(floor($duree/3600));
-			$duree -= $heures * 3600;
-		}
-		if ($duree>60) {
-			$minutes = intval(floor($duree/60));
-			$duree -= $minutes * 60;
-		}
-
-		if ($heures>0 or $minutes>0) {
-			$out = _T('date_fmt_heures_minutes', array('h' => $heures, 'm' => $minutes));
-			if (!$heures) {
-				$out = preg_replace(',^0[^\d]+,Uims', '', $out);
-			}
-		}
-
-		if (!$heures or $precis) {
-			$out .= intval($duree).'s';
-		}
-		return $out;
-	}
-}
