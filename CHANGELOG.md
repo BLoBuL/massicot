@@ -1,5 +1,20 @@
 # Journal des changements
 
+## [2.4.0] - 2026-08-26
+
+### Ajouté
+
+- traduction espagnole complète de l’interface et contrôle automatique de sa
+  parité avec la langue française ;
+- diagnostic de migration indiquant l’état du mode de compatibilité Massicot
+  1.x et le nombre de recadrages historiques conservés ;
+- contrôle automatisé du recadrage depuis l’image source de l’objet.
+
+### Amélioré
+
+- explication des limites du diagnostic de migration et de la transition vers
+  l’usage explicite du filtre `massicoter_objet`.
+
 ## [2.3.2] - 2026-08-17
 
 ### Amélioré
