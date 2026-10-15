@@ -306,7 +306,25 @@ function massicoter_fichier($fichier, $parametres) {
 		return $fichier;
 	}
 
-	list($width, $height) = getimagesize($fichier);
+	$dimensions = @getimagesize($fichier);
+	if (!$dimensions || !is_array($parametres)) {
+		return $fichier;
+	}
+	list($width, $height) = $dimensions;
+	// Un ancien recadrage vide ne doit pas empêcher d'afficher ou remplacer le logo.
+	foreach (array('zoom', 'x1', 'x2', 'y1', 'y2') as $cle) {
+		if (!isset($parametres[$cle]) || !is_numeric($parametres[$cle])
+			|| !is_finite((float)$parametres[$cle])) {
+			return $fichier;
+		}
+	}
+	if ($parametres['zoom'] <= 0 || $parametres['x1'] < 0 || $parametres['y1'] < 0
+		|| intval($parametres['x2']) <= intval($parametres['x1'])
+		|| intval($parametres['y2']) <= intval($parametres['y1'])
+		|| intval($parametres['zoom'] * $width) <= intval($parametres['x1'])
+		|| intval($parametres['zoom'] * $height) <= intval($parametres['y1'])) {
+		return $fichier;
+	}
 	if ($parametres['zoom'] === '1'
 		&& $parametres['x1'] === '0'
 		&& $parametres['x2'] === (string)$width
